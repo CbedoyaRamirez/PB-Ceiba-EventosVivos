@@ -1,0 +1,31 @@
+# .NET
+bin/
+obj/
+.vs/
+*.csproj.user
+.vscode/
+*.swp
+*.swo
+*~
+
+# Angular
+node_modules/
+dist/
+.angular/
+
+# IDE
+.idea/
+*.suo
+*.user
+
+# Worktrees
+.worktrees/
+worktrees/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
