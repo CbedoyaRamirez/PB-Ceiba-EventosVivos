@@ -1,0 +1,50 @@
+// Color palette
+$primary: #4F46E5;
+$accent: #ff4081;
+$warn: #f44336;
+
+// Light theme colors
+$light-bg: #f8f7ff;
+$light-surface: #ffffff;
+$light-text: rgba(0, 0, 0, 0.87);
+$light-text-secondary: rgba(0, 0, 0, 0.54);
+$light-divider: rgba(0, 0, 0, 0.12);
+
+// Dark theme colors
+$dark-bg: #303030;
+$dark-surface: #424242;
+$dark-text: #ffffff;
+$dark-text-secondary: rgba(255, 255, 255, 0.7);
+$dark-divider: rgba(255, 255, 255, 0.12);
+
+// Typography
+$font-family: 'Roboto', sans-serif;
+$font-family-serif: 'Lora', 'Playfair Display', serif;
+$font-size-base: 14px;
+$font-size-small: 12px;
+$font-size-large: 16px;
+$font-size-title: 24px;
+$font-size-heading: 32px;
+
+// Spacing
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+// Border radius
+$border-radius-sm: 2px;
+$border-radius-md: 4px;
+$border-radius-lg: 8px;
+
+// Shadow
+$shadow-1: 0 2px 4px rgba(0, 0, 0, 0.1);
+$shadow-2: 0 4px 8px rgba(0, 0, 0, 0.15);
+$shadow-3: 0 8px 16px rgba(0, 0, 0, 0.2);
+
+// Breakpoints
+$breakpoint-xs: 480px;
+$breakpoint-sm: 768px;
+$breakpoint-md: 1024px;
+$breakpoint-lg: 1440px;
