@@ -194,76 +194,79 @@ EventoListComponent recarga lista
 
 ```
 EventosVivos/
-├── EventosVivos.Domain/
-│   ├── Entities/
-│   │   ├── Evento.cs               ← Entidad principal: eventos
-│   │   ├── Reserva.cs              ← Entidad: reservas de entradas
-│   │   └── Venue.cs                ← Entidad: lugares/auditorios
-│   ├── Enums/
-│   │   ├── EstadoEvento.cs         (Activo, Cancelado, Completado)
-│   │   ├── EstadoReserva.cs        (PendientePago, Confirmada, Cancelada)
-│   │   └── TipoEvento.cs           (Conferencia, Taller, Concierto)
-│   ├── Exceptions/
-│   │   ├── DomainException.cs      ← Base exception
-│   │   └── BusinessRuleException.cs ← Excepciones de reglas de negocio (con Code)
-│   └── EventosVivos.Domain.csproj
+├── backend/                        ← Proyectos .NET (Domain, Application, Infrastructure, API, Tests)
+│   ├── EventosVivos.Domain/
+│   │   ├── Entities/
+│   │   │   ├── Evento.cs               ← Entidad principal: eventos
+│   │   │   ├── Reserva.cs              ← Entidad: reservas de entradas
+│   │   │   └── Venue.cs                ← Entidad: lugares/auditorios
+│   │   ├── Enums/
+│   │   │   ├── EstadoEvento.cs         (Activo, Cancelado, Completado)
+│   │   │   ├── EstadoReserva.cs        (PendientePago, Confirmada, Cancelada)
+│   │   │   └── TipoEvento.cs           (Conferencia, Taller, Concierto)
+│   │   ├── Exceptions/
+│   │   │   ├── DomainException.cs      ← Base exception
+│   │   │   └── BusinessRuleException.cs ← Excepciones de reglas de negocio (con Code)
+│   │   └── EventosVivos.Domain.csproj
+│   │
+│   ├── EventosVivos.Application/
+│   │   ├── Services/
+│   │   │   ├── EventoService.cs        ← Lógica: crear, listar, reportes
+│   │   │   ├── ReservaService.cs       ← Lógica: reservar, confirmar, cancelar
+│   │   │   └── VenueService.cs         ← Lógica: gestión de venues
+│   │   ├── DTOs/
+│   │   │   ├── CreateEventoDto.cs      (Entrada)
+│   │   │   ├── EventoDto.cs            (Salida)
+│   │   │   ├── CreateReservaDto.cs     (Entrada)
+│   │   │   ├── ReservaDto.cs           (Salida)
+│   │   │   ├── VenueDto.cs
+│   │   │   └── ReporteOcupacionDto.cs
+│   │   ├── Validators/
+│   │   │   ├── CreateEventoDtoValidator.cs
+│   │   │   ├── CreateReservaDtoValidator.cs
+│   │   │   └── ...
+│   │   ├── Interfaces/
+│   │   │   ├── IEventoRepository.cs
+│   │   │   ├── IReservaRepository.cs
+│   │   │   └── IVenueRepository.cs
+│   │   └── EventosVivos.Application.csproj
+│   │
+│   ├── EventosVivos.Infrastructure/
+│   │   ├── Data/
+│   │   │   ├── AppDbContext.cs         ← EF Core DbContext (In-Memory)
+│   │   │   ├── DataSeeder.cs           ← Carga datos iniciales (venues)
+│   │   │   └── Repositories/
+│   │   │       ├── EventoRepository.cs
+│   │   │       ├── ReservaRepository.cs
+│   │   │       └── VenueRepository.cs
+│   │   └── EventosVivos.Infrastructure.csproj
+│   │
+│   ├── EventosVivos.API/
+│   │   ├── Controllers/
+│   │   │   ├── EventosController.cs    Route: /api/eventos
+│   │   │   ├── ReservasController.cs   Route: /api/reservas
+│   │   │   └── VenuesController.cs     Route: /api/venues
+│   │   ├── Middleware/
+│   │   │   └── GlobalExceptionHandler.cs ← Manejo centralizado de errores
+│   │   ├── Program.cs                  ← Configuración DI, CORS, EF, Swagger
+│   │   ├── appsettings.json
+│   │   ├── appsettings.Development.json
+│   │   └── EventosVivos.API.csproj
+│   │
+│   ├── EventosVivos.Tests/
+│   │   ├── Domain/
+│   │   │   └── EventoTests.cs          (11 unit tests)
+│   │   ├── Application/
+│   │   │   ├── EventoServiceTests.cs   (10+ unit tests)
+│   │   │   └── ReservaServiceTests.cs  (10+ unit tests)
+│   │   ├── Integration/
+│   │   │   ├── EventosApiTests.cs      (Integration tests HTTP)
+│   │   │   └── ReservasApiTests.cs     (Integration tests HTTP)
+│   │   └── EventosVivos.Tests.csproj
+│   │
+│   └── EventosVivos.slnx               ← Solución .NET
 │
-├── EventosVivos.Application/
-│   ├── Services/
-│   │   ├── EventoService.cs        ← Lógica: crear, listar, reportes
-│   │   ├── ReservaService.cs       ← Lógica: reservar, confirmar, cancelar
-│   │   └── VenueService.cs         ← Lógica: gestión de venues
-│   ├── DTOs/
-│   │   ├── CreateEventoDto.cs      (Entrada)
-│   │   ├── EventoDto.cs            (Salida)
-│   │   ├── CreateReservaDto.cs     (Entrada)
-│   │   ├── ReservaDto.cs           (Salida)
-│   │   ├── VenueDto.cs
-│   │   └── ReporteOcupacionDto.cs
-│   ├── Validators/
-│   │   ├── CreateEventoDtoValidator.cs
-│   │   ├── CreateReservaDtoValidator.cs
-│   │   └── ...
-│   ├── Interfaces/
-│   │   ├── IEventoRepository.cs
-│   │   ├── IReservaRepository.cs
-│   │   └── IVenueRepository.cs
-│   └── EventosVivos.Application.csproj
-│
-├── EventosVivos.Infrastructure/
-│   ├── Data/
-│   │   ├── AppDbContext.cs         ← EF Core DbContext (In-Memory)
-│   │   ├── DataSeeder.cs           ← Carga datos iniciales (venues)
-│   │   └── Repositories/
-│   │       ├── EventoRepository.cs
-│   │       ├── ReservaRepository.cs
-│   │       └── VenueRepository.cs
-│   └── EventosVivos.Infrastructure.csproj
-│
-├── EventosVivos.API/
-│   ├── Controllers/
-│   │   ├── EventosController.cs    Route: /api/eventos
-│   │   ├── ReservasController.cs   Route: /api/reservas
-│   │   └── VenuesController.cs     Route: /api/venues
-│   ├── Middleware/
-│   │   └── GlobalExceptionHandler.cs ← Manejo centralizado de errores
-│   ├── Program.cs                  ← Configuración DI, CORS, EF, Swagger
-│   ├── appsettings.json
-│   ├── appsettings.Development.json
-│   └── EventosVivos.API.csproj
-│
-├── EventosVivos.Tests/
-│   ├── Domain/
-│   │   └── EventoTests.cs          (11 unit tests)
-│   ├── Application/
-│   │   ├── EventoServiceTests.cs   (10+ unit tests)
-│   │   └── ReservaServiceTests.cs  (10+ unit tests)
-│   ├── Integration/
-│   │   ├── EventosApiTests.cs      (Integration tests HTTP)
-│   │   └── ReservasApiTests.cs     (Integration tests HTTP)
-│   └── EventosVivos.Tests.csproj
-│
-├── eventosvivos-app/               ← Frontend Angular
+├── frontend/                       ← Frontend Angular
 │   ├── src/
 │   │   ├── main.ts                 ← Punto de entrada (bootstrap)
 │   │   ├── app/
@@ -310,7 +313,6 @@ EventosVivos/
 │   ├── package.json
 │   └── vite.config.js              ← Build config (esbuild)
 │
-├── EventosVivos.slnx               ← Solución .NET
 ├── README.md                        ← Este archivo
 ├── ARCHITECTURE.md                  ← Detalle de arquitectura frontend
 ├── FRONTEND_SETUP.md                ← Setup del frontend
@@ -711,7 +713,7 @@ Esto descargará todas las dependencias NuGet (.NET):
 #### 3️⃣ Instalar dependencias del Frontend
 
 ```powershell
-cd eventosvivos-app
+cd frontend
 npm install
 ```
 
@@ -744,11 +746,11 @@ Si no hay errores, ¡todo está listo!
 
 ```powershell
 # Opción 1: Con dotnet CLI (desde raíz)
-cd EventosVivos.API
+cd backend/EventosVivos.API
 dotnet run
 
 # Opción 2: Con Visual Studio 2022
-# Abre EventosVivos.slnx → Presiona F5
+# Abre backend/EventosVivos.slnx → Presiona F5
 
 # Opción 3: Desde VS Code
 # Abre la terminal integrada y ejecuta: dotnet run
@@ -770,8 +772,8 @@ info: Microsoft.Hosting.Lifetime[0]
 ### Ejecutar el Frontend
 
 ```powershell
-# Desde carpeta eventosvivos-app
-cd eventosvivos-app
+# Desde carpeta frontend
+cd frontend
 
 # Opción 1: Con Angular CLI
 ng serve
@@ -812,7 +814,7 @@ dotnet test
 dotnet test --logger "console;verbosity=detailed"
 
 # Solo tests de un proyecto
-dotnet test EventosVivos.Tests/EventosVivos.Tests.csproj
+dotnet test backend/EventosVivos.Tests/EventosVivos.Tests.csproj
 
 # Con cobertura de código
 dotnet test /p:CollectCoverage=true
@@ -835,11 +837,11 @@ Total de pruebas: 46. Aprobadas: 46. Errores: 0. Omitidas: 0. Duración: 3.456 s
 
 ```powershell
 # Backend con hot reload
-cd EventosVivos.API
+cd backend/EventosVivos.API
 dotnet watch run
 
 # Frontend con hot reload (automático con ng serve)
-cd eventosvivos-app
+cd frontend
 ng serve
 ```
 
