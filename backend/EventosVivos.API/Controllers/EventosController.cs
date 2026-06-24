@@ -1,7 +1,6 @@
 using EventosVivos.Application.DTOs;
 using EventosVivos.Application.Services;
 using EventosVivos.Domain.Enums;
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventosVivos.API.Controllers;
@@ -11,12 +10,10 @@ namespace EventosVivos.API.Controllers;
 public class EventosController : ControllerBase
 {
     private readonly EventoService _eventoService;
-    private readonly IValidator<CreateEventoDto> _createEventoValidator;
 
-    public EventosController(EventoService eventoService, IValidator<CreateEventoDto> createEventoValidator)
+    public EventosController(EventoService eventoService)
     {
         _eventoService = eventoService;
-        _createEventoValidator = createEventoValidator;
     }
 
     [HttpGet]
@@ -34,15 +31,6 @@ public class EventosController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<EventoDto>> CrearEvento([FromBody] CreateEventoDto dto)
     {
-        var validationResult = await _createEventoValidator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-        {
-            var errors = validationResult.Errors
-                .Select(f => new { property = f.PropertyName, message = f.ErrorMessage })
-                .ToList();
-            return BadRequest(new { errors });
-        }
-
         var evento = await _eventoService.CrearEventoAsync(dto);
         return CreatedAtAction(nameof(ObtenerEvento), new { id = evento.Id }, evento);
     }

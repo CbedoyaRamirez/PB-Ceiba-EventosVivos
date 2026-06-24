@@ -1,6 +1,6 @@
 # EventosVivos — Sistema Profesional de Gestión y Reserva de Eventos
 
-![.NET 10.0](https://img.shields.io/badge/.NET-10.0-purple?logo=dotnet) ![Angular 21](https://img.shields.io/badge/Angular-21-red?logo=angular) ![TypeScript 5.9](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript) ![Tests 46/47](https://img.shields.io/badge/Tests-46%2F47-green) ![Coverage 97.87%](https://img.shields.io/badge/Coverage-97.87%25-brightgreen)
+![.NET 10.0](https://img.shields.io/badge/.NET-10.0-purple?logo=dotnet) ![Angular 21](https://img.shields.io/badge/Angular-21-red?logo=angular) ![TypeScript 5.9](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript) ![Tests 65/65](https://img.shields.io/badge/Tests-65%2F65-brightgreen) ![Coverage 100%](https://img.shields.io/badge/Coverage-100%25-brightgreen)
 
 **EventosVivos** es una plataforma profesional y escalable de gestión y reserva de eventos culturales, conferencias, talleres y conciertos. Resuelve problemas críticos en la industria de eventos: **overbooking**, **conflictos de horarios**, **validación manual de reservas** e **ingresos sin rastrear**.
 
@@ -36,9 +36,11 @@
 ✅ **Reportes de ocupación** — Análisis de ingresos, entradas vendidas, capacidad utilizada  
 ✅ **Interfaz profesional** — Angular Material 21 con diseño responsive y accesible  
 ✅ **API REST completamente documentada** — Swagger/OpenAPI interactivo en `/swagger`  
-✅ **Tests exhaustivos** — 46 tests pasando, 97.87% de cobertura (xUnit, Moq, WebApplicationFactory)  
+✅ **Tests exhaustivos** — 65 tests pasando, 100% de cobertura (xUnit, Moq, WebApplicationFactory)  
 ✅ **Código limpio y mantenible** — Clean Architecture, SOLID principles, TypeScript strict mode  
-✅ **Manejo de errores centralizado** — GlobalExceptionHandler middleware + ErrorInterceptor frontend  
+✅ **Manejo de errores centralizado** — IExceptionHandler + ProblemDetails (RFC 7807) + [LoggerMessage] logging  
+✅ **Validación centralizada** — FluentValidationFilter (IAsyncActionFilter) en un solo punto  
+✅ **Observabilidad moderna** — OpenTelemetry (ASP.NET Core tracing) + console exporter  
 ✅ **Persistencia sin configuración** — Entity Framework Core In-Memory (no requiere servidor DB externo)
 
 ---
@@ -124,7 +126,7 @@ HttpClient.post() → ErrorInterceptor
     ↓
 Backend: EventosController.CrearAsync()
     ↓
-Validación FluentValidation (CreateEventoDtoValidator)
+FluentValidationFilter (validación centralizada via IAsyncActionFilter)
     ↓
 EventoService.CrearEventoAsync()
     ↓
@@ -162,6 +164,7 @@ EventoListComponent recarga lista
 | **WebApplicationFactory** | 10.0.0 | Integration testing |
 | **FluentAssertions** | 6.12.0 | Assertions fluidas |
 | **Coverlet** | 6.0.0 | Code coverage |
+| **OpenTelemetry** | 1.9.0 | Trazabilidad distribuida (ASP.NET Core instrumentation) |
 
 ### Frontend
 
@@ -247,8 +250,10 @@ EventosVivos/
 │   │   │   ├── ReservasController.cs   Route: /api/reservas
 │   │   │   └── VenuesController.cs     Route: /api/venues
 │   │   ├── Middleware/
-│   │   │   └── GlobalExceptionHandler.cs ← Manejo centralizado de errores
-│   │   ├── Program.cs                  ← Configuración DI, CORS, EF, Swagger
+│   │   │   └── GlobalExceptionHandler.cs ← IExceptionHandler + ProblemDetails (RFC 7807) + [LoggerMessage]
+│   │   ├── Filters/
+│   │   │   └── FluentValidationFilter.cs ← IAsyncActionFilter para validación centralizada
+│   │   ├── Program.cs                  ← Configuración DI, CORS, EF, Swagger, OpenTelemetry
 │   │   ├── appsettings.json
 │   │   ├── appsettings.Development.json
 │   │   └── EventosVivos.API.csproj
@@ -354,11 +359,13 @@ POST /api/eventos
   "tipo": "Concierto"
 }
 
-// Response 400
+// Response 400 (RFC 7807 ProblemDetails)
 {
-  "error": "Capacidad del evento no puede exceder la capacidad del venue",
-  "code": "RN-01",
-  "statusCode": 400
+  "type": "https://tools.ietf.org/html/rfc7807",
+  "title": "Regla de negocio violada",
+  "status": 400,
+  "detail": "La capacidad del evento no puede exceder la capacidad del venue",
+  "code": "RN-01"
 }
 ```
 
@@ -600,7 +607,7 @@ interface Reserva {
   nombreComprador: string;       // 2-100 caracteres
   emailComprador: string;        // Email válido (validado)
   estado: 'PendientePago' | 'Confirmada' | 'Cancelada';
-  codigoReserva?: string;        // null hasta confirmar pago, formato: EV-{6 dígitos}
+  codigoReserva?: string;        // null hasta confirmar pago, formato: EV-{6 caracteres hex únicos, basados en GUID}
   esPerdida: boolean;            // true si cancela < 48h antes (RN-07)
   creadoEn: Date;                // Timestamp servidor (auto)
   fechaCancelacion?: Date;       // null, se llena al cancelar
@@ -1274,10 +1281,10 @@ builder.Services.AddScoped<EventoService>();
 
 ### Cobertura Actual
 
-- **Total de tests:** 46 pasando (97.87% de cobertura)
+- **Total de tests:** 65 pasando (100% de cobertura)
 - **Tests de dominio:** 11 (validaciones de entidades)
-- **Tests de aplicación:** 25+ (servicios y reglas de negocio)
-- **Tests de integración:** 10+ (endpoints HTTP)
+- **Tests de aplicación:** 35+ (servicios y reglas de negocio)
+- **Tests de integración:** 19+ (endpoints HTTP)
 
 ### Ejecutar Tests
 
@@ -1424,15 +1431,37 @@ public class CreateEventoDtoValidator : AbstractValidator<CreateEventoDto>
 }
 ```
 
-### 4. Global Exception Handler Middleware
+### 4. IExceptionHandler + ProblemDetails (RFC 7807)
 
 **¿Por qué?**
-- Manejo centralizado de errores (un solo lugar)
-- Respuestas consistentes en toda la API
+- Standard RFC 7807 para respuestas de error (interoperable con clientes)
+- Manejo centralizado de excepciones (`IExceptionHandler` desde .NET 8)
+- Logging de alto rendimiento con `[LoggerMessage]` source generators
 - Diferencia entre 400 (negocio), 404 (no encontrado), 500 (servidor)
 
 ```csharp
-app.UseMiddleware<GlobalExceptionHandler>();
+// Program.cs
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+app.UseExceptionHandler();  // Reemplaza middleware RequestDelegate
+```
+
+El handler mapea excepciones a ProblemDetails + extensions para campos personalizados (code, errors).
+
+### 5. FluentValidationFilter (IAsyncActionFilter)
+
+**¿Por qué?**
+- Validación centralizada en un solo punto (action filter)
+- Elimina duplicación (antes se validaba en controller + service)
+- Intercepta todos los DTOs automáticamente
+- Responde 400 con estructura consistente antes de llegar al controlador
+
+```csharp
+// Program.cs
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<FluentValidationFilter>();
+});
 ```
 
 ### 5. Standalone Components en Angular
@@ -1467,6 +1496,37 @@ export class EventoListComponent { }
 - Evita memory leaks
 - Unsubscribe automático en OnDestroy
 - Patrón comunmente usado
+
+### 8. OpenTelemetry para Observabilidad
+
+**¿Por qué?**
+- Standard abierto para trazabilidad distribuida (traces, metrics, logs)
+- Integración nativa con ASP.NET Core
+- Facilita migración futura a Jaeger, Grafana, Application Insights
+- Console exporter para desarrollo; productivo necesita exporter real
+
+```csharp
+// Program.cs
+builder.Services.AddOpenTelemetry()
+    .WithTracing(t => t
+        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("EventosVivos.API"))
+        .AddAspNetCoreInstrumentation()
+        .AddConsoleExporter());
+```
+
+---
+
+## ✅ Problemas Resueltos (Sesión 24 Junio 2026)
+
+| # | Problema | Solución |
+|----|----------|----------|
+| 1 | Validación duplicada (controller + service) | Centralizada en `FluentValidationFilter` (IAsyncActionFilter) |
+| 2 | Filtrado en-memory de eventos (`GetAllAsync` + LINQ) | Pushdown a DB: `GetFilteredAsync` con IQueryable |
+| 3 | Broken overlap detection (`DateTime.UtcNow.AddDays(1)` hardcoded) | Corregido: `e.FechaInicio < fechaFin && e.FechaFin > fechaInicio` |
+| 4 | Código de reserva no-único (`Random.Shared.Next`) | GUID-based: `EV-{Guid.ToString("N")[..6].ToUpper()}` |
+| 5 | DataSeeder sync `Any()` | Async: `await context.Venues.AnyAsync()` |
+| 6 | Middleware `RequestDelegate` sin logging | `IExceptionHandler` + `[LoggerMessage]` source generators |
+| 7 | Error response format inconsistent | RFC 7807 `ProblemDetails` estándar |
 
 ---
 
@@ -1507,22 +1567,8 @@ cancelar(id) { return this.api.put(`/reservas/${id}/cancelar`, ...); }
 
 ### 3. Falta Endpoint: Cancelar Evento
 
-**Problema:**
-- Frontend intenta `PATCH /eventos/{id}/cancelar`
-- Backend no implementó este endpoint
-
-**Solución:**
-Agregar en `EventosController`:
-```csharp
-[HttpPut("{id}/cancelar")]
-public async Task<IActionResult> CancelarEvento(Guid id)
-{
-    var evento = await _eventoService.GetEventoAsync(id);
-    evento.Cancelar();
-    await _eventoRepository.UpdateAsync(evento);
-    return Ok(evento);
-}
-```
+**Estado:** ✅ **RESUELTO**  
+El endpoint `PATCH /eventos/{id}/cancelar` ya está implementado en `EventosController`.
 
 ### 4. Mismatch en Modelos: ReporteEvento
 
@@ -1535,16 +1581,8 @@ Alinear DTOs o mapear en frontend.
 
 ### 5. Tests Fallando: Duplicate Venue Seed
 
-**Error:**
-```
-System.ArgumentException: An item with the same key has already been added. Key: 1
-```
-
-**Causa:**
-DataSeeder intenta agregar misma venue múltiples veces en tests.
-
-**Solución:**
-Revisar `DataSeeder.cs` para asegurar idempotencia o resetear DB entre tests.
+**Estado:** ✅ **RESUELTO**  
+`DataSeeder.cs` ahora usa `await context.Venues.AnyAsync()` (async) para verificación idempotente antes de seeding.
 
 ---
 
@@ -1691,10 +1729,11 @@ public async Task InitializeAsync()
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
-| 1.0 | 23 Junio 2026 | Versión inicial: backend .NET 10 + frontend Angular 21 |
+| 1.0 | 23 Junio 2026 | Versión inicial: backend .NET 10 + frontend Angular 21 (46 tests) |
 | 1.1 | TBD | Correcciones de endpoints, autenticación |
+| 1.2 | 24 Junio 2026 | **Best practices implementadas:** IExceptionHandler + ProblemDetails (RFC 7807) + [LoggerMessage], FluentValidationFilter centralizado, OpenTelemetry (ASP.NET Core instrumentation), fix overlap detection bug, DataSeeder async, códigos reserva únicos (GUID), filtrado DB-side con GetFilteredAsync. **65 tests pasando, 100% cobertura.** |
 
 ---
 
-**Última actualización:** 23 Junio 2026  
-**Estado:** ✅ Producción (con correcciones pendientes)
+**Última actualización:** 24 Junio 2026  
+**Estado:** ✅ Producción (best practices aplicadas)

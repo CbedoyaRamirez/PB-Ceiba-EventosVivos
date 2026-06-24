@@ -3,7 +3,6 @@ using EventosVivos.Application.Interfaces;
 using EventosVivos.Domain.Entities;
 using EventosVivos.Domain.Enums;
 using EventosVivos.Domain.Exceptions;
-using FluentValidation;
 
 namespace EventosVivos.Application.Services;
 
@@ -12,28 +11,19 @@ public class EventoService
     private readonly IEventoRepository _eventoRepository;
     private readonly IVenueRepository _venueRepository;
     private readonly IReservaRepository _reservaRepository;
-    private readonly IValidator<CreateEventoDto> _validator;
 
     public EventoService(
         IEventoRepository eventoRepository,
         IVenueRepository venueRepository,
-        IReservaRepository reservaRepository,
-        IValidator<CreateEventoDto> validator)
+        IReservaRepository reservaRepository)
     {
         _eventoRepository = eventoRepository;
         _venueRepository = venueRepository;
         _reservaRepository = reservaRepository;
-        _validator = validator;
     }
 
     public async Task<EventoDto> CrearEventoAsync(CreateEventoDto dto)
     {
-        // Validar DTO
-        var validationResult = await _validator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-        {
-            throw new ValidationException(validationResult.Errors);
-        }
 
         // RN-01: Validar que la capacidad del evento no exceda la del venue
         var venue = await _venueRepository.GetByIdAsync(dto.VenueId);
@@ -88,34 +78,7 @@ public class EventoService
         EstadoEvento? estado = null,
         string? titulo = null)
     {
-        var eventos = await _eventoRepository.GetAllAsync();
-
-        // Aplicar filtros
-        if (tipo.HasValue)
-        {
-            eventos = eventos.Where(e => e.Tipo == tipo.Value).ToList();
-        }
-
-        if (fechaInicio.HasValue)
-        {
-            eventos = eventos.Where(e => e.FechaInicio >= fechaInicio.Value).ToList();
-        }
-
-        if (venueId.HasValue)
-        {
-            eventos = eventos.Where(e => e.VenueId == venueId.Value).ToList();
-        }
-
-        if (estado.HasValue)
-        {
-            eventos = eventos.Where(e => e.Estado == estado.Value).ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(titulo))
-        {
-            eventos = eventos.Where(e => e.Titulo.Contains(titulo, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
+        var eventos = await _eventoRepository.GetFilteredAsync(tipo, fechaInicio, venueId, estado, titulo);
         return eventos.Select(MapToDto).ToList();
     }
 

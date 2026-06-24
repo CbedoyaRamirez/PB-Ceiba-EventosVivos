@@ -69,11 +69,35 @@ public class EventoRepository : IEventoRepository
             .AsNoTracking()
             .Where(e =>
                 e.VenueId == venueId &&
-                e.FechaInicio < DateTime.UtcNow.AddDays(1) &&
-                e.FechaFin > DateTime.UtcNow &&
-                e.Estado == EstadoEvento.Activo &&
-                e.FechaInicio >= fechaInicio &&
-                e.FechaInicio <= fechaFin)
+                e.FechaInicio < fechaFin &&
+                e.FechaFin > fechaInicio)
             .ToListAsync();
+    }
+
+    public async Task<List<Evento>> GetFilteredAsync(
+        TipoEvento? tipo,
+        DateTime? fechaInicio,
+        int? venueId,
+        EstadoEvento? estado,
+        string? titulo)
+    {
+        var query = _context.Eventos.AsNoTracking().AsQueryable();
+
+        if (tipo.HasValue)
+            query = query.Where(e => e.Tipo == tipo.Value);
+
+        if (fechaInicio.HasValue)
+            query = query.Where(e => e.FechaInicio >= fechaInicio.Value);
+
+        if (venueId.HasValue)
+            query = query.Where(e => e.VenueId == venueId.Value);
+
+        if (estado.HasValue)
+            query = query.Where(e => e.Estado == estado.Value);
+
+        if (!string.IsNullOrWhiteSpace(titulo))
+            query = query.Where(e => e.Titulo.Contains(titulo));
+
+        return await query.ToListAsync();
     }
 }

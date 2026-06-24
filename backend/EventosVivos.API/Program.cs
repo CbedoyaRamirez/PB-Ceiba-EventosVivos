@@ -1,3 +1,4 @@
+using EventosVivos.API.Filters;
 using EventosVivos.Application.DTOs;
 using EventosVivos.Application.Interfaces;
 using EventosVivos.Application.Services;
@@ -7,10 +8,15 @@ using EventosVivos.Infrastructure.Data;
 using EventosVivos.Infrastructure.Repositories;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<FluentValidationFilter>();
+})
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(
@@ -20,6 +26,9 @@ builder.Services.AddControllers()
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseInMemoryDatabase("EventosVivosDb"));
@@ -44,6 +53,13 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .SetResourceBuilder(ResourceBuilder.CreateDefault()
+            .AddService("EventosVivos.API"))
+        .AddAspNetCoreInstrumentation()
+        .AddConsoleExporter());
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -52,7 +68,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<GlobalExceptionHandler>();
+app.UseExceptionHandler();
 
 app.UseCors("AllowLocalhost");
 app.UseHttpsRedirection();

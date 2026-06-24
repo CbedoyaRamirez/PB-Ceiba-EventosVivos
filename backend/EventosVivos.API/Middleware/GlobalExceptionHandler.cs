@@ -1,70 +1,107 @@
 using EventosVivos.Domain.Exceptions;
 using FluentValidation;
-using System.Text.Json;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EventosVivos.API.Middleware;
 
-public class GlobalExceptionHandler
+public sealed partial class GlobalExceptionHandler : IExceptionHandler
 {
-    private readonly RequestDelegate _next;
+    private readonly IProblemDetailsService _problemDetailsService;
+    private readonly ILogger<GlobalExceptionHandler> _logger;
 
-    public GlobalExceptionHandler(RequestDelegate next)
+    public GlobalExceptionHandler(
+        IProblemDetailsService problemDetailsService,
+        ILogger<GlobalExceptionHandler> logger)
     {
-        _next = next;
+        _problemDetailsService = problemDetailsService;
+        _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            await _next(context);
-        }
-        catch (Exception ex)
-        {
-            await HandleExceptionAsync(context, ex);
-        }
-    }
+        var (statusCode, title, extensions) = MapException(exception);
 
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        context.Response.ContentType = "application/json";
-
-        var response = new { error = string.Empty, code = string.Empty };
-
-        if (exception is BusinessRuleException brException)
+        if (statusCode == StatusCodes.Status500InternalServerError)
         {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            response = new { error = brException.Message, code = brException.Code };
-        }
-        else if (exception is DomainException dException)
-        {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            response = new { error = dException.Message, code = string.Empty };
-        }
-        else if (exception is ValidationException vException)
-        {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            var errors = vException.Errors
-                .Select(f => new { property = f.PropertyName, message = f.ErrorMessage })
-                .ToList();
-            return context.Response.WriteAsJsonAsync(new { errors });
-        }
-        else if (exception is ArgumentException or InvalidOperationException)
-        {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            response = new { error = exception.Message, code = string.Empty };
-        }
-        else if (exception is KeyNotFoundException kException)
-        {
-            context.Response.StatusCode = StatusCodes.Status404NotFound;
-            response = new { error = "Recurso no encontrado", code = "NOT_FOUND" };
+            LogUnhandledException(_logger, exception);
         }
         else
         {
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            response = new { error = "Ocurrió un error interno en el servidor", code = "INTERNAL_ERROR" };
+            LogHandledException(_logger, exception.GetType().Name, exception.Message);
         }
 
-        return context.Response.WriteAsJsonAsync(response);
+        httpContext.Response.StatusCode = statusCode;
+
+        var problemDetails = new ProblemDetails
+        {
+            Status = statusCode,
+            Title = title,
+            Detail = statusCode < 500 ? exception.Message : "Ocurrió un error interno en el servidor",
+        };
+
+        foreach (var (key, value) in extensions)
+            problemDetails.Extensions[key] = value;
+
+        return await _problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = httpContext,
+            ProblemDetails = problemDetails,
+            Exception = exception,
+        });
     }
+
+    private static (int statusCode, string title, Dictionary<string, object?> extensions)
+        MapException(Exception exception)
+    {
+        return exception switch
+        {
+            BusinessRuleException br => (
+                StatusCodes.Status400BadRequest,
+                "Regla de negocio violada",
+                new Dictionary<string, object?> { ["code"] = br.Code }),
+
+            DomainException => (
+                StatusCodes.Status400BadRequest,
+                "Error de dominio",
+                new Dictionary<string, object?> { ["code"] = string.Empty }),
+
+            ValidationException ve => (
+                StatusCodes.Status400BadRequest,
+                "Error de validación",
+                new Dictionary<string, object?>
+                {
+                    ["code"] = "VALIDATION_ERROR",
+                    ["errors"] = ve.Errors
+                        .Select(f => new { property = f.PropertyName, message = f.ErrorMessage })
+                        .ToList()
+                }),
+
+            ArgumentException or InvalidOperationException => (
+                StatusCodes.Status400BadRequest,
+                "Argumento inválido",
+                new Dictionary<string, object?> { ["code"] = string.Empty }),
+
+            KeyNotFoundException => (
+                StatusCodes.Status404NotFound,
+                "Recurso no encontrado",
+                new Dictionary<string, object?> { ["code"] = "NOT_FOUND" }),
+
+            _ => (
+                StatusCodes.Status500InternalServerError,
+                "Error interno del servidor",
+                new Dictionary<string, object?> { ["code"] = "INTERNAL_ERROR" })
+        };
+    }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Unhandled exception")]
+    private static partial void LogUnhandledException(ILogger logger, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "Handled exception of type {ExceptionType}: {Message}")]
+    private static partial void LogHandledException(
+        ILogger logger, string exceptionType, string message);
 }

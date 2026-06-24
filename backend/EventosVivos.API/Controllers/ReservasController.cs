@@ -1,6 +1,5 @@
 using EventosVivos.Application.DTOs;
 using EventosVivos.Application.Services;
-using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EventosVivos.API.Controllers;
@@ -10,12 +9,10 @@ namespace EventosVivos.API.Controllers;
 public class ReservasController : ControllerBase
 {
     private readonly ReservaService _reservaService;
-    private readonly IValidator<CreateReservaDto> _createReservaValidator;
 
-    public ReservasController(ReservaService reservaService, IValidator<CreateReservaDto> createReservaValidator)
+    public ReservasController(ReservaService reservaService)
     {
         _reservaService = reservaService;
-        _createReservaValidator = createReservaValidator;
     }
 
     [HttpGet]
@@ -34,15 +31,6 @@ public class ReservasController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ReservaDto>> CrearReserva([FromBody] CreateReservaDto dto)
     {
-        var validationResult = await _createReservaValidator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-        {
-            var errors = validationResult.Errors
-                .Select(f => new { property = f.PropertyName, message = f.ErrorMessage })
-                .ToList();
-            return BadRequest(new { errors });
-        }
-
         var reserva = await _reservaService.ReservarAsync(dto);
         return CreatedAtAction(nameof(ListarReservas), new { eventoId = reserva.EventoId }, reserva);
     }

@@ -3,7 +3,6 @@ using EventosVivos.Application.Interfaces;
 using EventosVivos.Domain.Entities;
 using EventosVivos.Domain.Enums;
 using EventosVivos.Domain.Exceptions;
-using FluentValidation;
 
 namespace EventosVivos.Application.Services;
 
@@ -11,27 +10,18 @@ public class ReservaService
 {
     private readonly IReservaRepository _reservaRepository;
     private readonly IEventoRepository _eventoRepository;
-    private readonly IValidator<CreateReservaDto> _validator;
     private const int MaxEntradasPorTransaccion = 10;
 
     public ReservaService(
         IReservaRepository reservaRepository,
-        IEventoRepository eventoRepository,
-        IValidator<CreateReservaDto> validator)
+        IEventoRepository eventoRepository)
     {
         _reservaRepository = reservaRepository;
         _eventoRepository = eventoRepository;
-        _validator = validator;
     }
 
     public async Task<ReservaDto> ReservarAsync(CreateReservaDto dto)
     {
-        // Validar DTO
-        var validationResult = await _validator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-        {
-            throw new ValidationException(validationResult.Errors);
-        }
 
         // Obtener evento
         var evento = await _eventoRepository.GetByIdAsync(dto.EventoId);
@@ -86,8 +76,7 @@ public class ReservaService
             throw new BusinessRuleException("NOT_FOUND", "La reserva especificada no existe.");
         }
 
-        // Generar código de reserva en formato EV-{6 dígitos}
-        var codigoReserva = $"EV-{Random.Shared.Next(100000, 999999)}";
+        var codigoReserva = $"EV-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
 
         reserva.ConfirmarPago(codigoReserva);
         await _reservaRepository.UpdateAsync(reserva);

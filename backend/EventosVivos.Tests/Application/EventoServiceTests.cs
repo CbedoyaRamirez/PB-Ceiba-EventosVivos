@@ -2,11 +2,9 @@ using System.Reflection;
 using EventosVivos.Application.DTOs;
 using EventosVivos.Application.Interfaces;
 using EventosVivos.Application.Services;
-using EventosVivos.Application.Validators;
 using EventosVivos.Domain.Entities;
 using EventosVivos.Domain.Enums;
 using EventosVivos.Domain.Exceptions;
-using FluentValidation;
 using Moq;
 
 namespace EventosVivos.Tests.Application;
@@ -16,7 +14,6 @@ public class EventoServiceTests
     private readonly Mock<IEventoRepository> _mockEventoRepository;
     private readonly Mock<IVenueRepository> _mockVenueRepository;
     private readonly Mock<IReservaRepository> _mockReservaRepository;
-    private readonly IValidator<CreateEventoDto> _validator;
     private readonly EventoService _eventoService;
 
     public EventoServiceTests()
@@ -24,13 +21,11 @@ public class EventoServiceTests
         _mockEventoRepository = new Mock<IEventoRepository>();
         _mockVenueRepository = new Mock<IVenueRepository>();
         _mockReservaRepository = new Mock<IReservaRepository>();
-        _validator = new CreateEventoDtoValidator();
 
         _eventoService = new EventoService(
             _mockEventoRepository.Object,
             _mockVenueRepository.Object,
-            _mockReservaRepository.Object,
-            _validator);
+            _mockReservaRepository.Object);
     }
 
     [Fact]
@@ -119,10 +114,13 @@ public class EventoServiceTests
         var evento1 = CreaEventoConTipo(TipoEvento.Conferencia);
         var evento2 = CreaEventoConTipo(TipoEvento.Taller);
 
-        var todos = new List<Evento> { evento1, evento2 };
-
-        _mockEventoRepository.Setup(x => x.GetAllAsync())
-            .ReturnsAsync(todos);
+        _mockEventoRepository.Setup(x => x.GetFilteredAsync(
+                It.IsAny<TipoEvento?>(),
+                It.IsAny<DateTime?>(),
+                It.IsAny<int?>(),
+                It.IsAny<EstadoEvento?>(),
+                It.IsAny<string?>()))
+            .ReturnsAsync(new List<Evento> { evento1 });
 
         // Act
         var resultado = await _eventoService.ListarEventosAsync(tipo: TipoEvento.Conferencia);
@@ -200,7 +198,12 @@ public class EventoServiceTests
             CreaEventoConTipo(TipoEvento.Concierto)
         };
 
-        _mockEventoRepository.Setup(x => x.GetAllAsync())
+        _mockEventoRepository.Setup(x => x.GetFilteredAsync(
+                It.IsAny<TipoEvento?>(),
+                It.IsAny<DateTime?>(),
+                It.IsAny<int?>(),
+                It.IsAny<EstadoEvento?>(),
+                It.IsAny<string?>()))
             .ReturnsAsync(eventos);
 
         // Act

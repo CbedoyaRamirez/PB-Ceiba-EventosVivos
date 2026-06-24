@@ -1,11 +1,9 @@
 using EventosVivos.Application.DTOs;
 using EventosVivos.Application.Interfaces;
 using EventosVivos.Application.Services;
-using EventosVivos.Application.Validators;
 using EventosVivos.Domain.Entities;
 using EventosVivos.Domain.Enums;
 using EventosVivos.Domain.Exceptions;
-using FluentValidation;
 using Moq;
 
 namespace EventosVivos.Tests.Application;
@@ -14,19 +12,16 @@ public class ReservaServiceTests
 {
     private readonly Mock<IReservaRepository> _mockReservaRepository;
     private readonly Mock<IEventoRepository> _mockEventoRepository;
-    private readonly IValidator<CreateReservaDto> _validator;
     private readonly ReservaService _reservaService;
 
     public ReservaServiceTests()
     {
         _mockReservaRepository = new Mock<IReservaRepository>();
         _mockEventoRepository = new Mock<IEventoRepository>();
-        _validator = new CreateReservaDtoValidator();
 
         _reservaService = new ReservaService(
             _mockReservaRepository.Object,
-            _mockEventoRepository.Object,
-            _validator);
+            _mockEventoRepository.Object);
     }
 
     [Fact]

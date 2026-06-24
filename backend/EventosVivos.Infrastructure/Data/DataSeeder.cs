@@ -1,5 +1,6 @@
 using EventosVivos.Domain.Entities;
 using EventosVivos.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EventosVivos.Infrastructure.Data;
@@ -11,7 +12,7 @@ public static class DataSeeder
         var context = services.GetRequiredService<AppDbContext>();
 
         // Check if data already exists
-        if (context.Venues.Any())
+        if (await context.Venues.AnyAsync())
         {
             return;
         }
