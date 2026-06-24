@@ -1,10 +1,19 @@
-@import 'variables';
-@import 'mixins';
+@use 'sass:color';
+@use 'variables' as *;
+@use 'mixins' as *;
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Preserve Angular Material MDC internal spacing */
+.mat-mdc-form-field *,
+.mdc-text-field *,
+.mdc-floating-label {
+  padding: revert;
+  margin: revert;
 }
 
 html,
@@ -54,7 +63,7 @@ a {
   @include smooth-transition(color);
 
   &:hover {
-    color: darken($primary, 10%);
+    color: color.adjust($primary, $lightness: -10%);
   }
 }
 
@@ -197,4 +206,21 @@ mat-form-field {
 
 .pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Confirm Dialog Styling */
+.ev-confirm-dialog .mat-mdc-dialog-container {
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2) !important;
+  padding: 0 !important;
+}
+
+.ev-confirm-dialog .mat-mdc-dialog-surface {
+  border-radius: 16px !important;
+  padding: 0 !important;
+}
+
+.cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
+  backdrop-filter: blur(4px);
 }

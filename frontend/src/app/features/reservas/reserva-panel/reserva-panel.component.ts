@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ReservaService } from '../../../core/services';
@@ -23,6 +23,7 @@ import { EstadoBadgeComponent, ConfirmDialogComponent } from '../../../shared/co
     MatIconModule,
     MatProgressSpinnerModule,
     MatCardModule,
+    MatDialogModule,
     EstadoBadgeComponent
   ],
   template: `
@@ -326,7 +327,8 @@ export class ReservaPanelComponent implements OnInit, OnDestroy {
   constructor(
     private reservaService: ReservaService,
     private dialog: MatDialog,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   get reservasConfirmadas(): number {
@@ -350,15 +352,19 @@ export class ReservaPanelComponent implements OnInit, OnDestroy {
         next: (reservas) => {
           this.reservas = reservas;
           this.cargando = false;
+          this.cdr.markForCheck();
         },
         error: () => {
           this.cargando = false;
+          this.cdr.markForCheck();
         }
       });
   }
 
   confirmarPago(reserva: Reserva): void {
     this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      panelClass: 'ev-confirm-dialog',
       data: {
         titulo: 'Confirmar Pago',
         mensaje: `¿Confirmar pago de reserva ${reserva.codigoReserva || 'N/A'} de ${reserva.nombreComprador}?`,
@@ -370,7 +376,7 @@ export class ReservaPanelComponent implements OnInit, OnDestroy {
       .subscribe((resultado) => {
         if (resultado) {
           this.reservaService
-            .confirmarPago(reserva.id, 'tarjeta')
+            .confirmarPago(reserva.id)
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: () => {
@@ -383,18 +389,20 @@ export class ReservaPanelComponent implements OnInit, OnDestroy {
 
   cancelarReserva(reserva: Reserva): void {
     this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      panelClass: 'ev-confirm-dialog',
       data: {
         titulo: 'Cancelar Reserva',
         mensaje: `¿Cancelar reserva ${reserva.codigoReserva || 'N/A'} de ${reserva.nombreComprador}?`,
         textoBtnAceptar: 'Cancelar',
-        tipo: 'warning'
+        tipo: 'error'
       }
     }).afterClosed()
       .pipe(takeUntil(this.destroy$))
       .subscribe((resultado) => {
         if (resultado) {
           this.reservaService
-            .cancelar(reserva.id, 'Cancelación manual')
+            .cancelar(reserva.id)
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: () => {
