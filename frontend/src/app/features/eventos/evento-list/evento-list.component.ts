@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -13,7 +13,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { Subject } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import { EventoService } from '../../../core/services';
 import { Evento } from '../../../core/models';
 import { EstadoBadgeComponent } from '../../../shared/components';
@@ -97,6 +97,9 @@ import { EstadoBadgeComponent } from '../../../shared/components';
             </mat-form-field>
 
             <div class="filtros-actions">
+              <button mat-raised-button color="primary" type="button" (click)="cargarEventos()">
+                <mat-icon>search</mat-icon> Buscar
+              </button>
               <button mat-stroked-button type="button" (click)="limpiarFiltros()" class="btn-clear">
                 <mat-icon>clear</mat-icon> Limpiar
               </button>
@@ -170,8 +173,9 @@ import { EstadoBadgeComponent } from '../../../shared/components';
           <div *ngIf="!cargando && eventos.length === 0" class="empty-state">
             <mat-icon class="empty-icon">event_busy</mat-icon>
             <h3>No hay eventos</h3>
-            <p>No encontramos eventos que coincidan con tus filtros. Intenta cambiar los criterios de búsqueda.</p>
-            <button mat-stroked-button (click)="limpiarFiltros()">
+            <p *ngIf="tieneFiltersActivos">No encontramos eventos que coincidan con tus filtros. Intenta cambiar los criterios de búsqueda.</p>
+            <p *ngIf="!tieneFiltersActivos">No hay eventos registrados aún. ¡Vuelve pronto!</p>
+            <button mat-stroked-button (click)="limpiarFiltros()" *ngIf="tieneFiltersActivos">
               <mat-icon>refresh</mat-icon> Limpiar Filtros
             </button>
           </div>
@@ -557,7 +561,7 @@ import { EstadoBadgeComponent } from '../../../shared/components';
 })
 export class EventoListComponent implements OnInit, OnDestroy {
   eventos: Evento[] = [];
-  cargando = false;
+  cargando = true;
   filtrosExpanded = true;
   filtrosForm: FormGroup;
   private destroy$ = new Subject<void>();
@@ -565,7 +569,8 @@ export class EventoListComponent implements OnInit, OnDestroy {
   constructor(
     private eventoService: EventoService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private ngZone: NgZone
   ) {
     this.filtrosForm = this.fb.group({
       titulo: [''],
@@ -577,28 +582,28 @@ export class EventoListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarEventos();
-    this.filtrosForm.valueChanges
-      .pipe(
-        debounceTime(400),
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      )
-      .subscribe(() => this.cargarEventos());
   }
 
   cargarEventos(): void {
     this.cargando = true;
-    const filtros = this.filtrosForm.value;
+    const { ordenar, ...filtros } = this.filtrosForm.value;
+    console.log('Cargando eventos con filtros:', filtros);
     this.eventoService
       .listar(filtros)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (eventos) => {
-          this.eventos = eventos;
-          this.cargando = false;
+          console.log('Eventos cargados:', eventos);
+          this.ngZone.run(() => {
+            this.eventos = eventos;
+            this.cargando = false;
+          });
         },
-        error: () => {
-          this.cargando = false;
+        error: (err) => {
+          console.log('Error cargando eventos:', err);
+          this.ngZone.run(() => {
+            this.cargando = false;
+          });
         }
       });
   }
@@ -610,6 +615,11 @@ export class EventoListComponent implements OnInit, OnDestroy {
       estado: '',
       ordenar: 'fecha-asc'
     });
+  }
+
+  get tieneFiltersActivos(): boolean {
+    const { titulo, tipo, estado } = this.filtrosForm.value;
+    return !!(titulo || tipo || estado);
   }
 
   get eventosFiltrados(): Evento[] {
