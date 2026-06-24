@@ -58,11 +58,11 @@ public class EventoService
             throw new BusinessRuleException("RN-02", "Ya existe un evento activo en este venue durante el rango de fechas especificado.");
         }
 
-        // RN-03: Validar que eventos de fin de semana no terminen después de las 22:00
+        // RN-03: Validar que eventos de fin de semana no inicien después de las 22:00
         if ((dto.FechaInicio.DayOfWeek == DayOfWeek.Saturday || dto.FechaInicio.DayOfWeek == DayOfWeek.Sunday) &&
-            dto.FechaFin.Hour >= 22)
+            dto.FechaInicio.Hour >= 22)
         {
-            throw new BusinessRuleException("RN-03", "Los eventos de fin de semana no pueden terminar después de las 22:00.");
+            throw new BusinessRuleException("RN-03", "Los eventos de fin de semana no pueden iniciar después de las 22:00.");
         }
 
         // Crear el evento

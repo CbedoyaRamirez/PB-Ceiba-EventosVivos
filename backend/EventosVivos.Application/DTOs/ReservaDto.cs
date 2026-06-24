@@ -12,5 +12,6 @@ public class ReservaDto
     public EstadoReserva Estado { get; set; }
     public string? CodigoReserva { get; set; }
     public DateTime? FechaCancelacion { get; set; }
+    public bool EsPerdida { get; set; }
     public DateTime CreadoEn { get; set; }
 }

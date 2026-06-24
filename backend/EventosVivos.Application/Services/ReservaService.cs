@@ -47,10 +47,10 @@ public class ReservaService
             throw new BusinessRuleException("RN-04", "No se pueden hacer reservas cuando faltan menos de 1 hora para el evento.");
         }
 
-        // RN-05 y RF-03: Validar límite de entradas por transacción
-        if (dto.Cantidad > MaxEntradasPorTransaccion)
+        // RN-05: Validar límite de entradas por transacción (solo para eventos precio > $100)
+        if (evento.Precio > 100 && dto.Cantidad > MaxEntradasPorTransaccion)
         {
-            throw new BusinessRuleException("RN-05", $"El máximo de entradas por transacción es {MaxEntradasPorTransaccion}.");
+            throw new BusinessRuleException("RN-05", $"El máximo de entradas por transacción es {MaxEntradasPorTransaccion} para eventos con precio mayor a $100.");
         }
 
         // Calcular disponibilidad
@@ -146,6 +146,7 @@ public class ReservaService
             Estado = reserva.Estado,
             CodigoReserva = reserva.CodigoReserva,
             FechaCancelacion = reserva.FechaCancelacion,
+            EsPerdida = reserva.EsPerdida,
             CreadoEn = reserva.CreadoEn
         };
     }

@@ -163,6 +163,32 @@ public class EventoServiceTests
     }
 
     [Fact]
+    public async Task CrearEvento_FinDeSemanaInicioMasDe22h_LanzaExcepcion()
+    {
+        // Arrange
+        var dto = CreaCreateEventoDtoValido();
+        // Forzar un sábado a las 23:00
+        var sabado = DateTime.UtcNow.AddDays(1);
+        while (sabado.DayOfWeek != DayOfWeek.Saturday) sabado = sabado.AddDays(1);
+        dto.FechaInicio = new DateTime(sabado.Year, sabado.Month, sabado.Day, 23, 0, 0, DateTimeKind.Utc);
+        dto.FechaFin = dto.FechaInicio.AddHours(1);
+
+        var venue = CreaVenueConCapacidad(100);
+        _mockVenueRepository.Setup(x => x.GetByIdAsync(dto.VenueId))
+            .ReturnsAsync(venue);
+
+        _mockEventoRepository.Setup(x => x.GetByVenueAndDateRangeAsync(
+            It.IsAny<int>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Evento>());
+
+        // Act & Assert
+        await Assert.ThrowsAsync<BusinessRuleException>(async () =>
+            await _eventoService.CrearEventoAsync(dto));
+    }
+
+    [Fact]
     public async Task ListarEventos_SinFiltros_RetornaTodos()
     {
         // Arrange

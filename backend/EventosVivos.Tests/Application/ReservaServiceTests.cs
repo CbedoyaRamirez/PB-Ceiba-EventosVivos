@@ -81,13 +81,13 @@ public class ReservaServiceTests
     }
 
     [Fact]
-    public async Task Reservar_MasDeMaximoDeEntradas_LanzaExcepcion()
+    public async Task Reservar_PrecioMenorIgual100_MasDe10Entradas_SePermite()
     {
         // Arrange
         var dto = CreaCreateReservaDtoValido();
         dto.Cantidad = 11;
 
-        var evento = CreaEventoValido();
+        var evento = CreaEventoValido(); // precio = 50m
 
         _mockEventoRepository.Setup(x => x.GetByIdAsync(dto.EventoId))
             .ReturnsAsync(evento);
@@ -95,9 +95,16 @@ public class ReservaServiceTests
         _mockReservaRepository.Setup(x => x.GetByEventoIdAsync(It.IsAny<Guid>()))
             .ReturnsAsync(new List<Reserva>());
 
-        // Act & Assert
-        await Assert.ThrowsAsync<BusinessRuleException>(async () =>
-            await _reservaService.ReservarAsync(dto));
+        _mockReservaRepository.Setup(x => x.AddAsync(It.IsAny<Reserva>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var resultado = await _reservaService.ReservarAsync(dto);
+
+        // Assert
+        Assert.NotNull(resultado);
+        Assert.Equal(EstadoReserva.PendientePago, resultado.Estado);
+        _mockReservaRepository.Verify(x => x.AddAsync(It.IsAny<Reserva>()), Times.Once);
     }
 
     [Fact]
@@ -240,6 +247,7 @@ public class ReservaServiceTests
         // Assert
         Assert.Equal(EstadoReserva.Cancelada, resultado.Estado);
         Assert.NotNull(resultado.FechaCancelacion);
+        Assert.True(resultado.EsPerdida);
     }
 
     [Fact]
