@@ -10,7 +10,14 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter(
+                System.Text.Json.JsonNamingPolicy.CamelCase,
+                allowIntegerValues: true));
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -31,7 +38,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", policyBuilder =>
     {
-        policyBuilder.WithOrigins("http://localhost:4200", "http://localhost:4300")
+        policyBuilder.WithOrigins("http://localhost:4200", "http://localhost:4300", "http://localhost:4301")
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
@@ -47,8 +54,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<GlobalExceptionHandler>();
 
-app.UseHttpsRedirection();
 app.UseCors("AllowLocalhost");
+app.UseHttpsRedirection();
 
 app.MapControllers();
 

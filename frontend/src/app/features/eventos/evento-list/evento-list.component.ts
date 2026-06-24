@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -118,7 +118,16 @@ import { EstadoBadgeComponent } from '../../../shared/components';
             </div>
           </div>
 
-          <div *ngIf="!cargando && eventosFiltrados.length > 0">
+          <div *ngIf="!cargando && errorCarga" class="error-state">
+            <mat-icon class="error-icon">cloud_off</mat-icon>
+            <h3>No se pudo conectar al servidor</h3>
+            <p>Verifica que el backend esté ejecutándose en localhost:5120</p>
+            <button mat-raised-button color="primary" (click)="cargarEventos()">
+              <mat-icon>refresh</mat-icon> Reintentar
+            </button>
+          </div>
+
+          <div *ngIf="!cargando && !errorCarga && eventosFiltrados.length > 0">
             <p class="result-count">{{ eventosFiltrados.length }} evento{{ eventosFiltrados.length !== 1 ? 's' : '' }} encontrado{{ eventosFiltrados.length !== 1 ? 's' : '' }}</p>
             <div class="eventos-grid">
               <div *ngFor="let evento of eventosFiltrados; trackBy: trackByEvento" class="evento-card-wrapper" [ngClass]="'tipo-' + evento.tipo">
@@ -467,7 +476,7 @@ import { EstadoBadgeComponent } from '../../../shared/components';
       }
     }
 
-    .empty-state {
+    .empty-state, .error-state {
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -475,12 +484,16 @@ import { EstadoBadgeComponent } from '../../../shared/components';
       padding: 80px 24px;
       text-align: center;
 
-      .empty-icon {
+      .empty-icon, .error-icon {
         font-size: 64px;
         width: 64px;
         height: 64px;
         color: #d1d5db;
         margin-bottom: 16px;
+      }
+
+      .error-icon {
+        color: #ef4444;
       }
 
       h3 {
@@ -562,6 +575,7 @@ import { EstadoBadgeComponent } from '../../../shared/components';
 export class EventoListComponent implements OnInit, OnDestroy {
   eventos: Evento[] = [];
   cargando = true;
+  errorCarga = false;
   filtrosExpanded = true;
   filtrosForm: FormGroup;
   private destroy$ = new Subject<void>();
@@ -570,7 +584,7 @@ export class EventoListComponent implements OnInit, OnDestroy {
     private eventoService: EventoService,
     private fb: FormBuilder,
     private router: Router,
-    private ngZone: NgZone
+    private cdr: ChangeDetectorRef
   ) {
     this.filtrosForm = this.fb.group({
       titulo: [''],
@@ -586,6 +600,7 @@ export class EventoListComponent implements OnInit, OnDestroy {
 
   cargarEventos(): void {
     this.cargando = true;
+    this.errorCarga = false;
     const { ordenar, ...filtros } = this.filtrosForm.value;
     console.log('Cargando eventos con filtros:', filtros);
     this.eventoService
@@ -594,16 +609,16 @@ export class EventoListComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (eventos) => {
           console.log('Eventos cargados:', eventos);
-          this.ngZone.run(() => {
-            this.eventos = eventos;
-            this.cargando = false;
-          });
+          this.eventos = eventos;
+          this.cargando = false;
+          this.errorCarga = false;
+          this.cdr.markForCheck();
         },
         error: (err) => {
           console.log('Error cargando eventos:', err);
-          this.ngZone.run(() => {
-            this.cargando = false;
-          });
+          this.cargando = false;
+          this.errorCarga = true;
+          this.cdr.markForCheck();
         }
       });
   }

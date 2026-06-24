@@ -1,12 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { timeout } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
   private apiUrl = 'http://localhost:5120/api';
+  private readonly REQUEST_TIMEOUT = 10000; // 10 segundos
 
   constructor(private http: HttpClient) {}
 
@@ -21,7 +23,9 @@ export class ApiService {
       });
     }
 
-    return this.http.get<T>(`${this.apiUrl}${endpoint}`, { params: httpParams });
+    return this.http.get<T>(`${this.apiUrl}${endpoint}`, { params: httpParams }).pipe(
+      timeout(this.REQUEST_TIMEOUT)
+    );
   }
 
   post<T>(endpoint: string, body: any): Observable<T> {
