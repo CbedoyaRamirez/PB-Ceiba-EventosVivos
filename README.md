@@ -1467,7 +1467,7 @@ builder.Services.AddControllers(options =>
 ### 5. Standalone Components en Angular
 
 **¿Por qué?**
-- Moderno (Angular 17+)
+- Moderno (Angular 21)
 - Menos boilerplate (sin NgModules)
 - Mejor tree-shaking
 - Composición más clara
