@@ -49,7 +49,7 @@ Una vez ejecutado el proyecto, accede a:
 
 | Componente | URL | Descripción |
 |-----------|-----|-------------|
-| **Frontend** | `http://localhost:4200` | Aplicación Angular completa |
+| **Frontend** | `http://localhost:4300` | Aplicación Angular completa |
 | **API Backend** | `https://localhost:5001` | REST API en .NET 10 |
 | **Swagger UI** | `https://localhost:5001/swagger` | Documentación interactiva de endpoints |
 | **Health Check** | `https://localhost:5001/health` | Estado del servidor (si está configurado) |
@@ -796,11 +796,11 @@ main.js               | main          | 45.32 kB|
 polyfills.js          | polyfills     | 33.21 kB|
 styles.css            | styles        | 12.54 kB|
 
-Application running. Open browser at http://localhost:4200/
+Application running. Open browser at http://localhost:4300/
 ```
 
 **✅ Frontend listo en:**
-- App: `http://localhost:4200`
+- App: `http://localhost:4300`
 
 ### Ejecutar los Tests
 
@@ -857,7 +857,7 @@ EventosVivos permite a los usuarios crear eventos, explorar el catálogo de even
 
 #### **Escena 1: Ver Listado de Eventos**
 
-1. Usuario abre `http://localhost:4200` → Navega automáticamente a `/eventos`
+1. Usuario abre `http://localhost:4300` → Navega automáticamente a `/eventos`
 2. Ve **EventoListComponent** con:
    - Tarjetas de eventos en grid
    - Panel de filtros a la izquierda (titulo, tipo, estado)
@@ -1611,7 +1611,7 @@ Access to XMLHttpRequest blocked by CORS policy
 
 **Solución:**
 - Asegurar que backend está corriendo: `https://localhost:5001`
-- Revisar `Program.cs` tiene CORS para `localhost:4200`
+- Revisar `Program.cs` tiene CORS para `localhost:4300`
 - Limpiar caché del navegador (F12 → Network → Disable cache)
 
 ---
