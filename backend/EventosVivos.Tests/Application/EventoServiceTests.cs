@@ -209,6 +209,252 @@ public class EventoServiceTests
         Assert.Equal(3, resultado.Count);
     }
 
+    [Fact]
+    public async Task CrearEvento_VenueNoExistente_LanzaExcepcion()
+    {
+        // Arrange
+        var dto = CreaCreateEventoDtoValido();
+        _mockVenueRepository.Setup(x => x.GetByIdAsync(dto.VenueId))
+            .ReturnsAsync((Venue?)null);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<BusinessRuleException>(async () =>
+            await _eventoService.CrearEventoAsync(dto));
+        Assert.Equal("RN-01", ex.Code);
+    }
+
+    [Fact]
+    public async Task CrearEvento_CapacidadIgualQueVenue_SePermite()
+    {
+        // Arrange
+        var dto = CreaCreateEventoDtoValido();
+        dto.CapacidadMaxima = 100;
+
+        var venue = CreaVenueConCapacidad(100);
+        _mockVenueRepository.Setup(x => x.GetByIdAsync(dto.VenueId))
+            .ReturnsAsync(venue);
+
+        _mockEventoRepository.Setup(x => x.GetByVenueAndDateRangeAsync(
+            It.IsAny<int>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Evento>());
+
+        _mockEventoRepository.Setup(x => x.AddAsync(It.IsAny<Evento>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var resultado = await _eventoService.CrearEventoAsync(dto);
+
+        // Assert
+        Assert.NotNull(resultado);
+        Assert.Equal(100, resultado.CapacidadMaxima);
+        _mockEventoRepository.Verify(x => x.AddAsync(It.IsAny<Evento>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearEvento_OverlapSoloConEventosCancelados_SePermite()
+    {
+        // Arrange
+        var dto = CreaCreateEventoDtoValido();
+
+        var venue = CreaVenueConCapacidad(100);
+        _mockVenueRepository.Setup(x => x.GetByIdAsync(dto.VenueId))
+            .ReturnsAsync(venue);
+
+        var eventoCancelado = new Evento(
+            "Evento Cancelado",
+            "Descripción",
+            dto.VenueId,
+            50,
+            dto.FechaInicio.AddHours(-1),
+            dto.FechaFin.AddHours(-1),
+            30m,
+            TipoEvento.Conferencia);
+        eventoCancelado.Cancelar();
+
+        _mockEventoRepository.Setup(x => x.GetByVenueAndDateRangeAsync(
+            It.IsAny<int>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Evento> { eventoCancelado });
+
+        _mockEventoRepository.Setup(x => x.AddAsync(It.IsAny<Evento>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var resultado = await _eventoService.CrearEventoAsync(dto);
+
+        // Assert
+        Assert.NotNull(resultado);
+        _mockEventoRepository.Verify(x => x.AddAsync(It.IsAny<Evento>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearEvento_SinOverlapEnMismoVenue_SePermite()
+    {
+        // Arrange
+        var dto = CreaCreateEventoDtoValido();
+
+        var venue = CreaVenueConCapacidad(100);
+        _mockVenueRepository.Setup(x => x.GetByIdAsync(dto.VenueId))
+            .ReturnsAsync(venue);
+
+        _mockEventoRepository.Setup(x => x.GetByVenueAndDateRangeAsync(
+            It.IsAny<int>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Evento>());
+
+        _mockEventoRepository.Setup(x => x.AddAsync(It.IsAny<Evento>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var resultado = await _eventoService.CrearEventoAsync(dto);
+
+        // Assert
+        Assert.NotNull(resultado);
+        _mockEventoRepository.Verify(x => x.AddAsync(It.IsAny<Evento>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearEvento_DomingoA22h00_LanzaExcepcion()
+    {
+        // Arrange
+        var dto = CreaCreateEventoDtoValido();
+        var domingo = ObtenerProximoDia(DayOfWeek.Sunday);
+        dto.FechaInicio = new DateTime(domingo.Year, domingo.Month, domingo.Day, 22, 0, 0, DateTimeKind.Utc);
+        dto.FechaFin = dto.FechaInicio.AddHours(1);
+
+        var venue = CreaVenueConCapacidad(100);
+        _mockVenueRepository.Setup(x => x.GetByIdAsync(dto.VenueId))
+            .ReturnsAsync(venue);
+
+        _mockEventoRepository.Setup(x => x.GetByVenueAndDateRangeAsync(
+            It.IsAny<int>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Evento>());
+
+        // Act & Assert
+        await Assert.ThrowsAsync<BusinessRuleException>(async () =>
+            await _eventoService.CrearEventoAsync(dto));
+    }
+
+    [Fact]
+    public async Task CrearEvento_SabadoA21h59_SePermite()
+    {
+        // Arrange
+        var dto = CreaCreateEventoDtoValido();
+        var sabado = ObtenerProximoDia(DayOfWeek.Saturday);
+        dto.FechaInicio = new DateTime(sabado.Year, sabado.Month, sabado.Day, 21, 59, 0, DateTimeKind.Utc);
+        dto.FechaFin = dto.FechaInicio.AddHours(1);
+
+        var venue = CreaVenueConCapacidad(100);
+        _mockVenueRepository.Setup(x => x.GetByIdAsync(dto.VenueId))
+            .ReturnsAsync(venue);
+
+        _mockEventoRepository.Setup(x => x.GetByVenueAndDateRangeAsync(
+            It.IsAny<int>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Evento>());
+
+        _mockEventoRepository.Setup(x => x.AddAsync(It.IsAny<Evento>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var resultado = await _eventoService.CrearEventoAsync(dto);
+
+        // Assert
+        Assert.NotNull(resultado);
+        _mockEventoRepository.Verify(x => x.AddAsync(It.IsAny<Evento>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearEvento_LunesA23h_SePermite()
+    {
+        // Arrange
+        var dto = CreaCreateEventoDtoValido();
+        var lunes = ObtenerProximoDia(DayOfWeek.Monday);
+        dto.FechaInicio = new DateTime(lunes.Year, lunes.Month, lunes.Day, 23, 0, 0, DateTimeKind.Utc);
+        dto.FechaFin = dto.FechaInicio.AddHours(1);
+
+        var venue = CreaVenueConCapacidad(100);
+        _mockVenueRepository.Setup(x => x.GetByIdAsync(dto.VenueId))
+            .ReturnsAsync(venue);
+
+        _mockEventoRepository.Setup(x => x.GetByVenueAndDateRangeAsync(
+            It.IsAny<int>(),
+            It.IsAny<DateTime>(),
+            It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Evento>());
+
+        _mockEventoRepository.Setup(x => x.AddAsync(It.IsAny<Evento>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var resultado = await _eventoService.CrearEventoAsync(dto);
+
+        // Assert
+        Assert.NotNull(resultado);
+        _mockEventoRepository.Verify(x => x.AddAsync(It.IsAny<Evento>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetEvento_FechaFinPasada_RetornaEstadoCompletado()
+    {
+        // Arrange
+        var evento = new Evento(
+            "Evento Pasado",
+            "Descripción",
+            1,
+            100,
+            DateTime.UtcNow.AddHours(-2),
+            DateTime.UtcNow.AddHours(-1),
+            50m,
+            TipoEvento.Conferencia);
+
+        _mockEventoRepository.Setup(x => x.GetByIdAsync(evento.Id))
+            .ReturnsAsync(evento);
+
+        _mockEventoRepository.Setup(x => x.UpdateAsync(It.IsAny<Evento>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var resultado = await _eventoService.GetEventoAsync(evento.Id);
+
+        // Assert
+        Assert.Equal(EstadoEvento.Completado, resultado.Estado);
+    }
+
+    [Fact]
+    public async Task GetEvento_FechaFinPasada_LlamaUpdateAsync()
+    {
+        // Arrange
+        var evento = new Evento(
+            "Evento Pasado",
+            "Descripción",
+            1,
+            100,
+            DateTime.UtcNow.AddHours(-2),
+            DateTime.UtcNow.AddHours(-1),
+            50m,
+            TipoEvento.Conferencia);
+
+        _mockEventoRepository.Setup(x => x.GetByIdAsync(evento.Id))
+            .ReturnsAsync(evento);
+
+        _mockEventoRepository.Setup(x => x.UpdateAsync(It.IsAny<Evento>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _eventoService.GetEventoAsync(evento.Id);
+
+        // Assert
+        _mockEventoRepository.Verify(x => x.UpdateAsync(It.IsAny<Evento>()), Times.Once);
+    }
+
     private static CreateEventoDto CreaCreateEventoDtoValido()
     {
         return new CreateEventoDto
@@ -246,5 +492,15 @@ public class EventoServiceTests
             DateTime.UtcNow.AddHours(26),
             30m,
             tipo);
+    }
+
+    private static DateTime ObtenerProximoDia(DayOfWeek dayOfWeek)
+    {
+        var fecha = DateTime.UtcNow.Date.AddDays(1);
+        while (fecha.DayOfWeek != dayOfWeek)
+        {
+            fecha = fecha.AddDays(1);
+        }
+        return fecha;
     }
 }
