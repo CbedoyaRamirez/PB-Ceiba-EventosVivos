@@ -10,14 +10,17 @@ public class ReservaService
 {
     private readonly IReservaRepository _reservaRepository;
     private readonly IEventoRepository _eventoRepository;
+    private readonly IPaymentGatewayService _paymentGateway;
     private const int MaxEntradasPorTransaccion = 10;
 
     public ReservaService(
         IReservaRepository reservaRepository,
-        IEventoRepository eventoRepository)
+        IEventoRepository eventoRepository,
+        IPaymentGatewayService paymentGateway)
     {
         _reservaRepository = reservaRepository;
         _eventoRepository = eventoRepository;
+        _paymentGateway = paymentGateway;
     }
 
     public async Task<ReservaDto> ReservarAsync(CreateReservaDto dto)
@@ -76,7 +79,7 @@ public class ReservaService
             throw new BusinessRuleException("NOT_FOUND", "La reserva especificada no existe.");
         }
 
-        var codigoReserva = $"EV-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
+        var codigoReserva = await _paymentGateway.ConfirmarPagoAsync(reservaId);
 
         reserva.ConfirmarPago(codigoReserva);
         await _reservaRepository.UpdateAsync(reserva);

@@ -12,16 +12,19 @@ public class ReservaServiceTests
 {
     private readonly Mock<IReservaRepository> _mockReservaRepository;
     private readonly Mock<IEventoRepository> _mockEventoRepository;
+    private readonly Mock<IPaymentGatewayService> _mockPaymentGateway;
     private readonly ReservaService _reservaService;
 
     public ReservaServiceTests()
     {
         _mockReservaRepository = new Mock<IReservaRepository>();
         _mockEventoRepository = new Mock<IEventoRepository>();
+        _mockPaymentGateway = new Mock<IPaymentGatewayService>();
 
         _reservaService = new ReservaService(
             _mockReservaRepository.Object,
-            _mockEventoRepository.Object);
+            _mockEventoRepository.Object,
+            _mockPaymentGateway.Object);
     }
 
     [Fact]
@@ -168,11 +171,16 @@ public class ReservaServiceTests
             "Juan Pérez",
             "juan@example.com");
 
+        const string codigoEsperado = "EV-ABC123";
+
         _mockReservaRepository.Setup(x => x.GetByIdAsync(reserva.Id))
             .ReturnsAsync(reserva);
 
         _mockReservaRepository.Setup(x => x.UpdateAsync(It.IsAny<Reserva>()))
             .Returns(Task.CompletedTask);
+
+        _mockPaymentGateway.Setup(x => x.ConfirmarPagoAsync(reserva.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(codigoEsperado);
 
         // Act
         var resultado = await _reservaService.ConfirmarPagoAsync(reserva.Id);
@@ -180,9 +188,9 @@ public class ReservaServiceTests
         // Assert
         Assert.NotNull(resultado);
         Assert.NotNull(resultado.CodigoReserva);
-        Assert.StartsWith("EV-", resultado.CodigoReserva);
-        Assert.Equal(6, resultado.CodigoReserva.Length - 3);
+        Assert.Equal(codigoEsperado, resultado.CodigoReserva);
         Assert.Equal(EstadoReserva.Confirmada, resultado.Estado);
+        _mockPaymentGateway.Verify(x => x.ConfirmarPagoAsync(reserva.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -199,6 +207,9 @@ public class ReservaServiceTests
 
         _mockReservaRepository.Setup(x => x.GetByIdAsync(reserva.Id))
             .ReturnsAsync(reserva);
+
+        _mockPaymentGateway.Setup(x => x.ConfirmarPagoAsync(reserva.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("EV-UNUSED");
 
         // Act & Assert
         await Assert.ThrowsAsync<BusinessRuleException>(async () =>
@@ -603,6 +614,30 @@ public class ReservaServiceTests
             NombreComprador = "Juan Pérez",
             EmailComprador = "juan@example.com"
         };
+    }
+
+    [Fact]
+    public async Task ConfirmarPago_GatewayLanzaExcepcion_Propagada()
+    {
+        // Arrange
+        var reserva = new Reserva(
+            Guid.NewGuid(),
+            5,
+            "Juan Pérez",
+            "juan@example.com");
+
+        _mockReservaRepository.Setup(x => x.GetByIdAsync(reserva.Id))
+            .ReturnsAsync(reserva);
+
+        _mockPaymentGateway.Setup(x => x.ConfirmarPagoAsync(reserva.Id, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Payment gateway error: 500"));
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _reservaService.ConfirmarPagoAsync(reserva.Id));
+
+        Assert.Contains("Payment gateway error", ex.Message);
+        _mockReservaRepository.Verify(x => x.UpdateAsync(It.IsAny<Reserva>()), Times.Never);
     }
 
     private static Evento CreaEventoValido()

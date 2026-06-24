@@ -1,7 +1,9 @@
 using EventosVivos.Application.DTOs;
+using EventosVivos.Application.Interfaces;
 using EventosVivos.Domain.Entities;
 using EventosVivos.Domain.Enums;
 using EventosVivos.Infrastructure.Data;
+using EventosVivos.Tests.Fakes;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +39,12 @@ public class ReservasApiTests : IAsyncLifetime
 
                     services.AddDbContext<AppDbContext>(options =>
                         options.UseInMemoryDatabase(dbName));
+
+                    var paymentDescriptor = services.SingleOrDefault(
+                        d => d.ServiceType == typeof(IPaymentGatewayService));
+                    if (paymentDescriptor != null) services.Remove(paymentDescriptor);
+
+                    services.AddScoped<IPaymentGatewayService, FakePaymentGatewayService>();
                 });
             });
 
@@ -138,6 +146,7 @@ public class ReservasApiTests : IAsyncLifetime
         var confirmedReserva = JsonSerializer.Deserialize<ReservaDto>(json, _jsonOptions);
         Assert.Equal(EstadoReserva.Confirmada, confirmedReserva.Estado);
         Assert.NotNull(confirmedReserva.CodigoReserva);
+        Assert.Equal("EV-FAKE00", confirmedReserva.CodigoReserva);
     }
 
     [Fact]

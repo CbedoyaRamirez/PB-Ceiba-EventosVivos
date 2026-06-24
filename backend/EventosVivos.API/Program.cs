@@ -6,8 +6,10 @@ using EventosVivos.Application.Validators;
 using EventosVivos.API.Middleware;
 using EventosVivos.Infrastructure.Data;
 using EventosVivos.Infrastructure.Repositories;
+using EventosVivos.Infrastructure.Services;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Http.Resilience;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -42,6 +44,13 @@ builder.Services.AddScoped<ReservaService>();
 
 builder.Services.AddScoped<IValidator<CreateEventoDto>, CreateEventoDtoValidator>();
 builder.Services.AddScoped<IValidator<CreateReservaDto>, CreateReservaDtoValidator>();
+
+builder.Services.AddHttpClient<IPaymentGatewayService, HttpPaymentGatewayService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["PaymentGateway:BaseUrl"] ?? "https://api.pagos.ejemplo.com");
+    client.Timeout = TimeSpan.FromSeconds(10);
+})
+.AddStandardResilienceHandler();
 
 builder.Services.AddCors(options =>
 {
