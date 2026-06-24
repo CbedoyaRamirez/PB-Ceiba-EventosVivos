@@ -1,6 +1,6 @@
 # EventosVivos — Sistema Profesional de Gestión y Reserva de Eventos
 
-![.NET 8.0](https://img.shields.io/badge/.NET-8.0-purple?logo=dotnet) ![Angular 21](https://img.shields.io/badge/Angular-21-red?logo=angular) ![TypeScript 5.9](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript) ![Tests 46/47](https://img.shields.io/badge/Tests-46%2F47-green) ![Coverage 97.87%](https://img.shields.io/badge/Coverage-97.87%25-brightgreen)
+![.NET 10.0](https://img.shields.io/badge/.NET-10.0-purple?logo=dotnet) ![Angular 21](https://img.shields.io/badge/Angular-21-red?logo=angular) ![TypeScript 5.9](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript) ![Tests 46/47](https://img.shields.io/badge/Tests-46%2F47-green) ![Coverage 97.87%](https://img.shields.io/badge/Coverage-97.87%25-brightgreen)
 
 **EventosVivos** es una plataforma profesional y escalable de gestión y reserva de eventos culturales, conferencias, talleres y conciertos. Resuelve problemas críticos en la industria de eventos: **overbooking**, **conflictos de horarios**, **validación manual de reservas** e **ingresos sin rastrear**.
 
@@ -50,7 +50,7 @@ Una vez ejecutado el proyecto, accede a:
 | Componente | URL | Descripción |
 |-----------|-----|-------------|
 | **Frontend** | `http://localhost:4200` | Aplicación Angular completa |
-| **API Backend** | `https://localhost:5001` | REST API en .NET 8 |
+| **API Backend** | `https://localhost:5001` | REST API en .NET 10 |
 | **Swagger UI** | `https://localhost:5001/swagger` | Documentación interactiva de endpoints |
 | **Health Check** | `https://localhost:5001/health` | Estado del servidor (si está configurado) |
 
@@ -76,7 +76,7 @@ Una vez ejecutado el proyecto, accede a:
 └─────────────────────────────────────────────────────────────┘
                          ↓
 ┌─────────────────────────────────────────────────────────────┐
-│            Backend ASP.NET Core 8.0 + Clean Architecture    │
+│            Backend ASP.NET Core 10.0 + Clean Architecture   │
 │                                                              │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │ API Layer (Controllers & Global Exception Handler)  │   │
@@ -151,15 +151,15 @@ EventoListComponent recarga lista
 
 | Tecnología | Versión | Propósito |
 |-----------|---------|----------|
-| **.NET** | 8.0 | Framework principal |
+| **.NET** | 10.0 | Framework principal |
 | **C#** | Latest | Lenguaje de programación |
-| **Entity Framework Core** | 8.0 | ORM (In-Memory provider) |
+| **Entity Framework Core** | 10.0 | ORM (In-Memory provider) |
 | **FluentValidation** | 11.9.0 | Validación declarativa de DTOs |
 | **Swashbuckle** | 6.4.0 | Documentación Swagger/OpenAPI |
-| **OpenAPI** | 8.0.23 | Especificación de API |
+| **OpenAPI** | 10.0.x | Especificación de API |
 | **xUnit** | 2.5.3 | Framework de testing |
 | **Moq** | 4.20.70 | Mocking para tests |
-| **WebApplicationFactory** | 8.0.0 | Integration testing |
+| **WebApplicationFactory** | 10.0.0 | Integration testing |
 | **FluentAssertions** | 6.12.0 | Assertions fluidas |
 | **Coverlet** | 6.0.0 | Code coverage |
 
@@ -667,7 +667,7 @@ Antes de iniciar, asegúrate de tener instalado:
 
 | Software | Versión Mínima | Propósito |
 |----------|---|----------|
-| **.NET SDK** | 8.0.x | Desarrollo backend |
+| **.NET SDK** | 10.0.x | Desarrollo backend |
 | **Node.js** | 20.0.0+ (recomendado 24.13.1) | Runtime frontend |
 | **npm** | 11.0.0+ | Gestor de dependencias frontend |
 | **Visual Studio 2022** (opcional) | Latest | IDE recomendada para .NET |
@@ -678,7 +678,7 @@ Antes de iniciar, asegúrate de tener instalado:
 
 ```powershell
 # Backend
-dotnet --version    # Debe ser >= 8.0.x
+dotnet --version    # Debe ser >= 10.0.x
 
 # Frontend
 node --version      # Debe ser >= 20.0.0
@@ -1689,7 +1689,7 @@ public async Task InitializeAsync()
 
 | Versión | Fecha | Cambios |
 |---------|-------|---------|
-| 1.0 | 23 Junio 2026 | Versión inicial: backend .NET 8 + frontend Angular 21 |
+| 1.0 | 23 Junio 2026 | Versión inicial: backend .NET 10 + frontend Angular 21 |
 | 1.1 | TBD | Correcciones de endpoints, autenticación |
 
 ---
