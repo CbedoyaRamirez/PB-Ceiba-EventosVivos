@@ -56,7 +56,7 @@ public class ReservaService
         // Calcular disponibilidad
         var todasLasReservas = await _reservaRepository.GetByEventoIdAsync(dto.EventoId);
         var entradasReservadas = todasLasReservas
-            .Where(r => r.Estado == EstadoReserva.Confirmada || !r.EsPerdida)
+            .Where(r => r.Estado != EstadoReserva.Cancelada || r.EsPerdida)
             .Sum(r => r.Cantidad);
 
         var entradasDisponibles = evento.CapacidadMaxima - entradasReservadas;
@@ -145,6 +145,7 @@ public class ReservaService
             EmailComprador = reserva.EmailComprador,
             Estado = reserva.Estado,
             CodigoReserva = reserva.CodigoReserva,
+            FechaCancelacion = reserva.FechaCancelacion,
             CreadoEn = reserva.CreadoEn
         };
     }

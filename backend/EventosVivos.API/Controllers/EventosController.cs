@@ -60,4 +60,11 @@ public class EventosController : ControllerBase
         var reporte = await _eventoService.GetReporteAsync(id);
         return Ok(reporte);
     }
+
+    [HttpPatch("{id}/cancelar")]
+    public async Task<ActionResult<EventoDto>> CancelarEvento(Guid id)
+    {
+        var evento = await _eventoService.CancelarEventoAsync(id);
+        return Ok(evento);
+    }
 }

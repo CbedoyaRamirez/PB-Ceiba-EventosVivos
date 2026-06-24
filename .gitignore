@@ -29,3 +29,13 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Test artifacts / screenshots
+*.png
+*.yaml
+*.yml
+.playwright-cli/
+server.log
+verify-app.js
+package.json
+package-lock.json

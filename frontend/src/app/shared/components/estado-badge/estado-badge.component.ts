@@ -48,6 +48,11 @@ type EstadoType = EstadoEvento | string;
       background-color: #10b981;
       color: white;
     }
+
+    .estado-cancelada {
+      background-color: #ef4444;
+      color: white;
+    }
   `]
 })
 export class EstadoBadgeComponent {
@@ -63,7 +68,8 @@ export class EstadoBadgeComponent {
       'cancelado': 'Cancelado',
       'completado': 'Completado',
       'pendiente_pago': 'Pendiente Pago',
-      'confirmada': 'Confirmada'
+      'confirmada': 'Confirmada',
+      'cancelada': 'Cancelada'
     };
     return labels[estado] || estado;
   }

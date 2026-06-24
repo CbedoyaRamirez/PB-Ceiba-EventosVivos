@@ -32,10 +32,9 @@ export interface UpdateEventoDto extends Partial<CreateEventoDto> {
 
 export interface ReporteEvento {
   eventoId: string;
-  titulo: string;
-  reservasTotal: number;
-  ingresoTotal: number;
-  capacidadUtilizada: number;
-  reservasPendientes: number;
-  reservasConfirmadas: number;
+  entradasVendidas: number;
+  entradasDisponibles: number;
+  porcentajeOcupacion: number;
+  ingresosTotales: number;
+  estadoEvento: string;
 }

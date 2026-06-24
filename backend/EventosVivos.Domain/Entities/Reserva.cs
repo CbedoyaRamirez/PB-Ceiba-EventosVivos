@@ -71,7 +71,10 @@ public class Reserva
     public void Cancelar()
     {
         if (Estado == EstadoReserva.Cancelada)
-            throw new BusinessRuleException("RN-07", "La reserva ya está cancelada.");
+            throw new BusinessRuleException("RF05-01", "La reserva ya está cancelada.");
+
+        if (Estado == EstadoReserva.PendientePago)
+            throw new BusinessRuleException("RF05-02", "No se puede cancelar una reserva pendiente de pago. Solo se permiten cancelaciones de reservas confirmadas.");
 
         Estado = EstadoReserva.Cancelada;
         FechaCancelacion = DateTime.UtcNow;

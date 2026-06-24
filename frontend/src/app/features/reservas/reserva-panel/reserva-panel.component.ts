@@ -363,7 +363,7 @@ export class ReservaPanelComponent implements OnInit, OnDestroy {
 
   confirmarPago(reserva: Reserva): void {
     this.dialog.open(ConfirmDialogComponent, {
-      width: '420px',
+      width: '460px',
       panelClass: 'ev-confirm-dialog',
       data: {
         titulo: 'Confirmar Pago',
@@ -389,7 +389,7 @@ export class ReservaPanelComponent implements OnInit, OnDestroy {
 
   cancelarReserva(reserva: Reserva): void {
     this.dialog.open(ConfirmDialogComponent, {
-      width: '420px',
+      width: '460px',
       panelClass: 'ev-confirm-dialog',
       data: {
         titulo: 'Cancelar Reserva',

@@ -223,6 +223,8 @@ public class ReservaServiceTests
             "Juan Pérez",
             "juan@example.com");
 
+        reserva.ConfirmarPago("EV-123456");
+
         _mockReservaRepository.Setup(x => x.GetByIdAsync(reserva.Id))
             .ReturnsAsync(reserva);
 
@@ -237,7 +239,7 @@ public class ReservaServiceTests
 
         // Assert
         Assert.Equal(EstadoReserva.Cancelada, resultado.Estado);
-        Assert.True(resultado.Estado == EstadoReserva.Cancelada);
+        Assert.NotNull(resultado.FechaCancelacion);
     }
 
     [Fact]
@@ -260,6 +262,8 @@ public class ReservaServiceTests
             "Juan Pérez",
             "juan@example.com");
 
+        reserva.ConfirmarPago("EV-123456");
+
         _mockReservaRepository.Setup(x => x.GetByIdAsync(reserva.Id))
             .ReturnsAsync(reserva);
 
@@ -274,10 +278,11 @@ public class ReservaServiceTests
 
         // Assert
         Assert.Equal(EstadoReserva.Cancelada, resultado.Estado);
+        Assert.False(resultado.FechaCancelacion == null);
     }
 
     [Fact]
-    public async Task Cancelar_ReservaNoConfirmada_LanzaExcepcion()
+    public async Task Cancelar_ReservaYaCancelada_LanzaExcepcion()
     {
         // Arrange
         var evento = CreaEventoValido();
@@ -288,6 +293,29 @@ public class ReservaServiceTests
             "juan@example.com");
 
         reserva.Cancelar();
+
+        _mockReservaRepository.Setup(x => x.GetByIdAsync(reserva.Id))
+            .ReturnsAsync(reserva);
+
+        _mockEventoRepository.Setup(x => x.GetByIdAsync(evento.Id))
+            .ReturnsAsync(evento);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<BusinessRuleException>(async () =>
+            await _reservaService.CancelarAsync(reserva.Id));
+    }
+
+    [Fact]
+    public async Task Cancelar_ReservaPendientePago_LanzaExcepcion()
+    {
+        // Arrange
+        var evento = CreaEventoValido();
+        var reserva = new Reserva(
+            evento.Id,
+            5,
+            "Juan Pérez",
+            "juan@example.com");
+        // Estado permanece PendientePago — NO se llama ConfirmarPago ni Cancelar
 
         _mockReservaRepository.Setup(x => x.GetByIdAsync(reserva.Id))
             .ReturnsAsync(reserva);

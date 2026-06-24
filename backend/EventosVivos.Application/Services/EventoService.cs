@@ -172,6 +172,20 @@ public class EventoService
         };
     }
 
+    public async Task<EventoDto> CancelarEventoAsync(Guid id)
+    {
+        var evento = await _eventoRepository.GetByIdAsync(id);
+        if (evento == null)
+        {
+            throw new BusinessRuleException("NOT_FOUND", "El evento especificado no existe.");
+        }
+
+        evento.Cancelar();
+        await _eventoRepository.UpdateAsync(evento);
+
+        return MapToDto(evento);
+    }
+
     private static EventoDto MapToDto(Evento evento)
     {
         return new EventoDto

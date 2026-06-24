@@ -15,7 +15,7 @@ export class ReservaService {
   }
 
   listarPorEvento(eventoId: string): Observable<Reserva[]> {
-    return this.api.get<Reserva[]>(`/eventos/${eventoId}/reservas`);
+    return this.api.get<Reserva[]>('/reservas', { eventoId });
   }
 
   obtener(id: string): Observable<Reserva> {
@@ -26,15 +26,11 @@ export class ReservaService {
     return this.api.post<Reserva>('/reservas', dto);
   }
 
-  confirmarPago(reservaId: string, metodoPago: string, referenciaTransaccion?: string): Observable<Reserva> {
-    const payload = {
-      metodoPago,
-      referenciaTransaccion: referenciaTransaccion || ''
-    };
-    return this.api.patch<Reserva>(`/reservas/${reservaId}/confirmar-pago`, payload);
+  confirmarPago(reservaId: string): Observable<Reserva> {
+    return this.api.put<Reserva>(`/reservas/${reservaId}/confirmar`, {});
   }
 
-  cancelar(id: string, razon: string): Observable<Reserva> {
-    return this.api.patch<Reserva>(`/reservas/${id}/cancelar`, { razon });
+  cancelar(id: string): Observable<Reserva> {
+    return this.api.put<Reserva>(`/reservas/${id}/cancelar`, {});
   }
 }

@@ -15,7 +15,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(
             new System.Text.Json.Serialization.JsonStringEnumConverter(
-                System.Text.Json.JsonNamingPolicy.CamelCase,
+                System.Text.Json.JsonNamingPolicy.SnakeCaseLower,
                 allowIntegerValues: true));
     });
 builder.Services.AddEndpointsApiExplorer();

@@ -1,6 +1,7 @@
 /* Global styles for EventosVivos */
 
+@use 'app/styles/variables';
+@use 'app/styles/mixins';
+@use 'app/styles/global';
+
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
-@import 'app/styles/variables';
-@import 'app/styles/mixins';
-@import 'app/styles/global';

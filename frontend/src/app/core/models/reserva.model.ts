@@ -8,6 +8,7 @@ export interface Reserva {
   emailComprador: string;
   estado: EstadoReserva;
   codigoReserva: string | null;
+  fechaCancelacion?: Date;
   creadoEn: Date;
   actualizadoEn?: Date;
 }

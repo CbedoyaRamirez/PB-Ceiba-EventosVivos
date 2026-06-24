@@ -96,5 +96,22 @@ public static class DataSeeder
 
         await context.Eventos.AddRangeAsync(eventos);
         await context.SaveChangesAsync();
+
+        // Seed sample reservas
+        var reservas = new List<Reserva>
+        {
+            new Reserva(eventos[0].Id, 2, "Ana García", "ana.garcia@email.com"),
+            new Reserva(eventos[1].Id, 1, "Carlos Mendoza", "carlos.mendoza@email.com"),
+            new Reserva(eventos[2].Id, 3, "María López", "maria.lopez@email.com"),
+            new Reserva(eventos[0].Id, 1, "Pedro Ramírez", "pedro.ramirez@email.com")
+        };
+
+        reservas[0].ConfirmarPago("EV-100001");
+        reservas[2].ConfirmarPago("EV-100002");
+        reservas[3].ConfirmarPago("EV-100003");
+        reservas[3].Cancelar();
+
+        await context.Reservas.AddRangeAsync(reservas);
+        await context.SaveChangesAsync();
     }
 }

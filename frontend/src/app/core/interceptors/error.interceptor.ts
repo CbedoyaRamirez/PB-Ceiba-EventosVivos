@@ -33,7 +33,6 @@ export class ErrorInterceptor implements HttpInterceptor {
           errorMessage = 'No tienes permiso para realizar esta acción.';
         } else if (error.status === 404) {
           errorMessage = 'Recurso no encontrado.';
-          this.router.navigate(['/404']);
         } else if (error.status === 409) {
           errorMessage = 'Conflicto: El recurso ya existe o ha sido modificado.';
         } else if (error.status === 500) {

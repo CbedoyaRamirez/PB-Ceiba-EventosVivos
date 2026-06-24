@@ -29,7 +29,7 @@ public class CreateEventoDtoValidator : AbstractValidator<CreateEventoDto>
             .GreaterThan(x => x.FechaInicio).WithMessage("La fecha de fin debe ser posterior a la fecha de inicio.");
 
         RuleFor(x => x.Precio)
-            .GreaterThan(0).WithMessage("El precio debe ser mayor a 0.");
+            .GreaterThanOrEqualTo(0).WithMessage("El precio debe ser mayor o igual a 0.");
 
         RuleFor(x => x.Tipo)
             .NotEqual(default(TipoEvento)).WithMessage("El tipo de evento no puede ser None.");

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -11,12 +11,11 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, forkJoin, of } from 'rxjs';
+import { takeUntil, switchMap, catchError } from 'rxjs/operators';
 import { EventoService, ReservaService } from '../../../core/services';
 import { Evento, Reserva } from '../../../core/models';
 import { EstadoBadgeComponent, ConfirmDialogComponent } from '../../../shared/components';
-import { ReservaFormComponent } from '../../reservas/reserva-form/reserva-form.component';
 
 @Component({
   selector: 'app-evento-detail',
@@ -34,8 +33,7 @@ import { ReservaFormComponent } from '../../reservas/reserva-form/reserva-form.c
     MatProgressBarModule,
     MatDialogModule,
     MatSnackBarModule,
-    EstadoBadgeComponent,
-    ReservaFormComponent
+    EstadoBadgeComponent
   ],
   template: `
     <div class="detail-wrapper">
@@ -45,6 +43,12 @@ import { ReservaFormComponent } from '../../reservas/reserva-form/reserva-form.c
         </button>
 
         <div *ngIf="!cargando; else loading" class="detail-content">
+          <div *ngIf="errorCarga && !evento" class="error-state">
+            <mat-icon>error_outline</mat-icon>
+            <p>No se pudo cargar el evento. Verifica tu conexión o que el servidor esté disponible.</p>
+            <button mat-stroked-button (click)="volver()">Volver a eventos</button>
+          </div>
+
           <div *ngIf="evento" class="header-section">
             <div class="header-info">
               <h1 class="evento-titulo">{{ evento.titulo }}</h1>
@@ -52,7 +56,8 @@ import { ReservaFormComponent } from '../../reservas/reserva-form/reserva-form.c
               <app-estado-badge [estado]="evento.estado"></app-estado-badge>
             </div>
             <button mat-raised-button color="primary" class="btn-reservar"
-                    (click)="abrirFormReserva()" [disabled]="evento.estado !== 'activo'">
+                    [routerLink]="['/eventos', evento.id, 'reservar']"
+                    [disabled]="evento.estado !== 'activo'">
               <mat-icon>bookmark</mat-icon> Reservar Ahora
             </button>
           </div>
@@ -123,23 +128,18 @@ import { ReservaFormComponent } from '../../reservas/reserva-form/reserva-form.c
                 <div *ngIf="reporte" class="reporte-container">
                   <div class="reporte-stats">
                     <div class="stat-card primary">
-                      <div class="stat-label">Total Reservas</div>
-                      <div class="stat-value">{{ reporte.reservasTotal }}</div>
+                      <div class="stat-label">Entradas Vendidas</div>
+                      <div class="stat-value">{{ reporte.entradasVendidas }}</div>
                     </div>
 
                     <div class="stat-card success">
-                      <div class="stat-label">Confirmadas</div>
-                      <div class="stat-value">{{ reporte.reservasConfirmadas }}</div>
-                    </div>
-
-                    <div class="stat-card warning">
-                      <div class="stat-label">Pendientes</div>
-                      <div class="stat-value">{{ reporte.reservasPendientes }}</div>
+                      <div class="stat-label">Entradas Disponibles</div>
+                      <div class="stat-value">{{ reporte.entradasDisponibles }}</div>
                     </div>
 
                     <div class="stat-card highlight">
                       <div class="stat-label">Ingreso Total</div>
-                      <div class="stat-value">{{ reporte.ingresoTotal | currency }}</div>
+                      <div class="stat-value">{{ reporte.ingresosTotales | currency }}</div>
                     </div>
                   </div>
 
@@ -147,9 +147,9 @@ import { ReservaFormComponent } from '../../reservas/reserva-form/reserva-form.c
                     <h3>Ocupación del Evento</h3>
                     <div class="ocupacion-bar">
                       <mat-progress-bar mode="determinate"
-                                        [value]="reporte.capacidadUtilizada">
+                                        [value]="reporte.porcentajeOcupacion">
                       </mat-progress-bar>
-                      <span class="ocupacion-text">{{ reporte.capacidadUtilizada }}% ocupado</span>
+                      <span class="ocupacion-text">{{ reporte.porcentajeOcupacion }}% ocupado</span>
                     </div>
                   </div>
                 </div>
@@ -566,6 +566,37 @@ import { ReservaFormComponent } from '../../reservas/reserva-form/reserva-form.c
       color: #6b7280;
     }
 
+    .error-state {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 24px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      gap: 16px;
+      color: #6b7280;
+      text-align: center;
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        color: #ef4444;
+      }
+
+      p {
+        margin: 0;
+        font-size: 16px;
+        max-width: 400px;
+      }
+
+      button {
+        margin-top: 8px;
+      }
+    }
+
     @media (max-width: 768px) {
       .header-section {
         flex-direction: column;
@@ -622,6 +653,7 @@ export class EventoDetailComponent implements OnInit, OnDestroy {
   reservas: Reserva[] = [];
   reporte: any = null;
   cargando = true;
+  errorCarga = false;
   columnasReservas = ['codigoReserva', 'nombreComprador', 'emailComprador', 'cantidad', 'estado', 'acciones'];
   private destroy$ = new Subject<void>();
 
@@ -631,7 +663,8 @@ export class EventoDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private dialog: MatDialog,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -645,14 +678,34 @@ export class EventoDetailComponent implements OnInit, OnDestroy {
 
   cargarDatos(id: string): void {
     this.cargando = true;
+    this.errorCarga = false;
+    console.log('[evento-detail] Iniciando carga del evento:', id);
     this.eventoService
       .obtener(id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (evento) => {
+      .pipe(
+        switchMap((evento) => {
+          console.log('[evento-detail] Evento recibido:', evento);
           this.evento = evento;
-          this.cargarReservas(id);
-          this.cargarReporte(id);
+          return forkJoin([
+            this.reservaService.listarPorEvento(id).pipe(catchError(() => of([]))),
+            this.eventoService.reporte(id).pipe(catchError(() => of(null)))
+          ]);
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: ([reservas, reporte]) => {
+          console.log('[evento-detail] forkJoin completó:', { reservas, reporte });
+          this.reservas = reservas;
+          this.reporte = reporte;
+          this.cargando = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('[evento-detail] Error al cargar:', err);
+          this.cargando = false;
+          this.errorCarga = true;
+          this.cdr.markForCheck();
         }
       });
   }
@@ -664,8 +717,8 @@ export class EventoDetailComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (reservas) => {
           this.reservas = reservas;
-          this.cargando = false;
-        }
+        },
+        error: () => {}
       });
   }
 
@@ -676,24 +729,8 @@ export class EventoDetailComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (reporte) => {
           this.reporte = reporte;
-        }
-      });
-  }
-
-  abrirFormReserva(): void {
-    if (!this.evento) return;
-
-    this.dialog.open(ReservaFormComponent, {
-      width: '400px',
-      maxWidth: '90vw',
-      data: { evento: this.evento }
-    }).afterClosed()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((resultado) => {
-        if (resultado) {
-          this.cargarReservas(this.evento!.id);
-          this.cargarReporte(this.evento!.id);
-        }
+        },
+        error: () => {}
       });
   }
 
@@ -710,7 +747,7 @@ export class EventoDetailComponent implements OnInit, OnDestroy {
       .subscribe((resultado) => {
         if (resultado && this.evento) {
           this.reservaService
-            .confirmarPago(reserva.id, 'tarjeta')
+            .confirmarPago(reserva.id)
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: () => {
@@ -745,7 +782,7 @@ export class EventoDetailComponent implements OnInit, OnDestroy {
       .subscribe((resultado) => {
         if (resultado && this.evento) {
           this.reservaService
-            .cancelar(reserva.id, 'Cancelada por el administrador')
+            .cancelar(reserva.id)
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: () => {

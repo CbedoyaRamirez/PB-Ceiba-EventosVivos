@@ -37,8 +37,9 @@ import { CreateEventoDto, Venue, Evento } from '../../../core/models';
   template: `
     <div class="form-wrapper">
       <div class="form-container">
-        <button mat-icon-button class="back-button" (click)="cancelar()">
+        <button mat-button class="back-button" (click)="cancelar()">
           <mat-icon>arrow_back</mat-icon>
+          Volver a eventos
         </button>
 
         <div class="form-header">
@@ -212,6 +213,9 @@ import { CreateEventoDto, Venue, Evento } from '../../../core/models';
     .back-button {
       margin-bottom: 24px;
       color: #6b7280;
+      display: flex;
+      align-items: center;
+      gap: 4px;
 
       &:hover {
         color: var(--primary);
