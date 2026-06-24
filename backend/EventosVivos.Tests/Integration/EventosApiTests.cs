@@ -14,13 +14,29 @@ public class EventosApiTests : IAsyncLifetime
 {
     private WebApplicationFactory<Program> _factory;
     private HttpClient _client;
-    private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter(
+            System.Text.Json.JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: true) }
+    };
 
     public async Task InitializeAsync()
     {
-        _factory = new WebApplicationFactory<Program>();
+        _factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureServices(services =>
+                {
+                    var descriptor = services.SingleOrDefault(
+                        d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
+                    if (descriptor != null) services.Remove(descriptor);
+
+                    services.AddDbContext<AppDbContext>(options =>
+                        options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}"));
+                });
+            });
         _client = _factory.CreateClient();
-        await Task.CompletedTask;
     }
 
     public async Task DisposeAsync()
