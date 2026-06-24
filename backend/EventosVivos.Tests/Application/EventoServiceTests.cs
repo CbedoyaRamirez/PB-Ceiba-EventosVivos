@@ -1,3 +1,4 @@
+using System.Reflection;
 using EventosVivos.Application.DTOs;
 using EventosVivos.Application.Interfaces;
 using EventosVivos.Application.Services;
@@ -405,15 +406,7 @@ public class EventoServiceTests
     public async Task GetEvento_FechaFinPasada_RetornaEstadoCompletado()
     {
         // Arrange
-        var evento = new Evento(
-            "Evento Pasado",
-            "Descripción",
-            1,
-            100,
-            DateTime.UtcNow.AddHours(-2),
-            DateTime.UtcNow.AddHours(-1),
-            50m,
-            TipoEvento.Conferencia);
+        var evento = CreaEventoConFechasPasadas();
 
         _mockEventoRepository.Setup(x => x.GetByIdAsync(evento.Id))
             .ReturnsAsync(evento);
@@ -432,15 +425,7 @@ public class EventoServiceTests
     public async Task GetEvento_FechaFinPasada_LlamaUpdateAsync()
     {
         // Arrange
-        var evento = new Evento(
-            "Evento Pasado",
-            "Descripción",
-            1,
-            100,
-            DateTime.UtcNow.AddHours(-2),
-            DateTime.UtcNow.AddHours(-1),
-            50m,
-            TipoEvento.Conferencia);
+        var evento = CreaEventoConFechasPasadas();
 
         _mockEventoRepository.Setup(x => x.GetByIdAsync(evento.Id))
             .ReturnsAsync(evento);
@@ -502,5 +487,25 @@ public class EventoServiceTests
             fecha = fecha.AddDays(1);
         }
         return fecha;
+    }
+
+    private static Evento CreaEventoConFechasPasadas()
+    {
+        var evento = (Evento)Activator.CreateInstance(typeof(Evento), nonPublic: true)!;
+        static void Set(object obj, string name, object val) =>
+            typeof(Evento).GetProperty(name, BindingFlags.Public | BindingFlags.Instance)!
+                .GetSetMethod(nonPublic: true)!.Invoke(obj, new[] { val });
+        Set(evento, "Id", Guid.NewGuid());
+        Set(evento, "Titulo", "Evento Pasado");
+        Set(evento, "Descripcion", "Descripción");
+        Set(evento, "VenueId", 1);
+        Set(evento, "CapacidadMaxima", 100);
+        Set(evento, "FechaInicio", DateTime.UtcNow.AddHours(-2));
+        Set(evento, "FechaFin", DateTime.UtcNow.AddHours(-1));
+        Set(evento, "Precio", 50m);
+        Set(evento, "Tipo", TipoEvento.Conferencia);
+        Set(evento, "Estado", EstadoEvento.Activo);
+        Set(evento, "CreadoEn", DateTime.UtcNow.AddDays(-7));
+        return evento;
     }
 }

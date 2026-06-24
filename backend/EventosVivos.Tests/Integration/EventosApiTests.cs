@@ -1,4 +1,5 @@
 using EventosVivos.Application.DTOs;
+using EventosVivos.Domain.Entities;
 using EventosVivos.Domain.Enums;
 using EventosVivos.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -23,6 +24,8 @@ public class EventosApiTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        var dbName = $"TestDb_{Guid.NewGuid()}";
+
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
@@ -33,10 +36,27 @@ public class EventosApiTests : IAsyncLifetime
                     if (descriptor != null) services.Remove(descriptor);
 
                     services.AddDbContext<AppDbContext>(options =>
-                        options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}"));
+                        options.UseInMemoryDatabase(dbName));
                 });
             });
+
         _client = _factory.CreateClient();
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            // Clear any existing venues to ensure we have a clean state
+            db.Venues.RemoveRange(db.Venues);
+            await db.SaveChangesAsync();
+
+            // Add venues
+            db.Venues.AddRange(
+                new Venue { Id = 1, Nombre = "Auditorio Central", Capacidad = 200, Ciudad = "Bogotá" },
+                new Venue { Id = 2, Nombre = "Sala Norte", Capacidad = 50, Ciudad = "Bogotá" },
+                new Venue { Id = 3, Nombre = "Arena Sur", Capacidad = 500, Ciudad = "Medellín" });
+            await db.SaveChangesAsync();
+        }
     }
 
     public async Task DisposeAsync()

@@ -300,6 +300,7 @@ public class ReservaServiceTests
             "Juan Pérez",
             "juan@example.com");
 
+        reserva.ConfirmarPago("EV-123456");
         reserva.Cancelar();
 
         _mockReservaRepository.Setup(x => x.GetByIdAsync(reserva.Id))
@@ -366,8 +367,8 @@ public class ReservaServiceTests
             "Descripción",
             1,
             100,
-            DateTime.UtcNow.AddMinutes(60),
-            DateTime.UtcNow.AddMinutes(120),
+            DateTime.UtcNow.AddMinutes(60).AddSeconds(5),
+            DateTime.UtcNow.AddMinutes(120).AddSeconds(5),
             50m,
             TipoEvento.Conferencia);
 
@@ -490,8 +491,8 @@ public class ReservaServiceTests
             "Descripción",
             1,
             100,
-            DateTime.UtcNow.AddHours(48),
-            DateTime.UtcNow.AddHours(49),
+            DateTime.UtcNow.AddHours(48).AddSeconds(5),
+            DateTime.UtcNow.AddHours(49).AddSeconds(5),
             50m,
             TipoEvento.Conferencia);
 
