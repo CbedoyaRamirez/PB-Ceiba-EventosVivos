@@ -179,7 +179,7 @@ import { EstadoBadgeComponent } from '../../../shared/components';
             </div>
           </div>
 
-          <div *ngIf="!cargando && eventos.length === 0" class="empty-state">
+          <div *ngIf="!cargando && !errorCarga && eventos.length === 0" class="empty-state">
             <mat-icon class="empty-icon">event_busy</mat-icon>
             <h3>No hay eventos</h3>
             <p *ngIf="tieneFiltersActivos">No encontramos eventos que coincidan con tus filtros. Intenta cambiar los criterios de búsqueda.</p>
@@ -455,6 +455,12 @@ import { EstadoBadgeComponent } from '../../../shared/components';
             color: var(--primary) !important;
             font-weight: 600;
             font-size: 12px;
+            opacity: 1 !important;
+
+            .mdc-evolution-chip__text-label,
+            .mat-mdc-chip-action-label {
+              color: var(--primary) !important;
+            }
           }
         }
       }
@@ -677,7 +683,7 @@ export class EventoListComponent implements OnInit, OnDestroy {
   }
 
   irAReservar(eventoId: string): void {
-    this.router.navigate(['/eventos', eventoId]);
+    this.router.navigate(['/eventos', eventoId, 'reservar']);
   }
 
   crearEvento(): void {
